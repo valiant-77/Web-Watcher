@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - WebWatcher</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #1a1a1a 0%, #1e3a8a 50%, #0c4a6e 100%);
+        }
+        .blue-glow {
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+        }
+        .min-h-screen {
+            display: flex;
+            flex-direction: column;
+        }
+        .flex-grow {
+            flex-grow: 1;
+            display: flex;
+            align-items: center; /* Vertically center the content */
+            justify-content: center; /* Horizontally center the content */
+        }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen text-white">
+    <!-- Navbar -->
+    <nav class="border-b border-white/10 backdrop-blur-md">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <span class="text-2xl font-bold text-white">WebWatcher</span>
+                </div>
+                <div class="flex items-center">
+                    <a href="../index.html" id="logoutButton" class="px-6 py-2 rounded-full bg-blue-600 hover:bg-blue-700 transition-colors">
+                        Logout
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Dashboard Cards -->
+    <div class="flex-grow w-full">
+        <div class="max-w-4xl mx-auto px-4 py-8"> <!-- Reduced max-width to 4xl -->
+            <h1 class="text-4xl font-bold text-center mb-8" id="welcomeMessage">Welcome to Your Dashboard!</h1>
+            <div id="loading" class="text-center text-gray-300">Loading...</div>
+            <div class="grid grid-cols-1 md:grid-cols-1 gap-8">
+                <!-- Card 1: Create or Edit Schedule -->
+                <div class="bg-white/5 backdrop-blur-lg rounded-xl p-8 border border-white/10 mx-auto" style="max-width: 450px;"> <!-- Added max-width -->
+                    <h2 class="text-2xl font-bold mb-4 text-blue-400">Customize Your Web Watchlist </h2>
+                    <p class="text-gray-300 mb-6">
+                        Set up tags, define keywords, and enter URLs to monitor your desired web pages.
+                    </p>
+                    <div class="text-center">
+                        <a href="./watchlist.html" class="px-6 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors">
+                            Manage Watchlist
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Card 2: Complete Daily Tasks -->
+                <div class="bg-white/5 backdrop-blur-lg rounded-xl p-8 border border-white/10 mx-auto" style="max-width: 450px;"> <!-- Added max-width -->
+                    <h2 class="text-2xl font-bold mb-4 text-blue-400">Monitor Your Websites</h2>
+                    <p class="text-gray-300 mb-6">
+                        Browse the latest data fetched from your selected websites.
+                    </p>
+                    <div class="text-center">
+                        <a href="./calendar.html" class="px-6 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors">
+                            View Results
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="border-t border-white/10 py-8">
+        <div class="max-w-7xl mx-auto px-4 text-center text-gray-400">
+            <p>&copy; 2025 WebWatcher. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script>
+        // Check if the user is authenticated
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = '../login.html';
+        }
+
+        // Logout functionality
+        document.getElementById('logoutButton').addEventListener('click', () => {
+            localStorage.removeItem('token');
+            window.location.href = '../login.html';
+        });
+
+       // Fetch user data
+async function fetchUserData() {
+    try {
+        const response = await fetch('/api/user', {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+            },
+        });
+
+        if (!response.ok) {
+            if (response.status === 401) {
+                localStorage.removeItem('token');
+                window.location.href = '../login.html';
+            }
+            throw new Error('Failed to fetch user data');
+        }
+
+        const userData = await response.json();
+        document.querySelector('h1').textContent = `Welcome, ${userData.username}!`;
+        document.getElementById('loading').style.display = 'none';
+    } catch (err) {
+        console.error('Error fetching user data:', err);
+    }
+}
+
+        fetchUserData();
+    </script>
+</body>
+</html>

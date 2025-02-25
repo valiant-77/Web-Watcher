@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Watchlist - WebWatcher</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #1a1a1a 0%, #1e3a8a 50%, #0c4a6e 100%);
+        }
+        .blue-glow {
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+        }
+        input, textarea {
+            background: rgba(255, 255, 255, 0.05) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        }
+        .min-h-screen {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .flex-grow {
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .keyword-pill {
+            background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+            padding: 6px 14px;
+            border-radius: 20px;
+            margin-right: 8px;
+            margin-bottom: 8px;
+            display: inline-flex;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            transition: all 0.2s ease;
+        }
+        .keyword-pill:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+        .keyword-x {
+            margin-left: 8px;
+            font-size: 12px;
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        .keyword-x:hover {
+            background-color: rgba(255, 255, 255, 0.4);
+        }
+        .url-item {
+            background: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%);
+            padding: 8px 14px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            transition: all 0.2s ease;
+        }
+        .url-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+        .url-number {
+            min-width: 24px;
+            height: 24px;
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+            font-weight: bold;
+            font-size: 12px;
+        }
+        .url-text {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .items-container {
+            min-height: 100px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+        .items-container:focus-within {
+            border-color: rgba(59, 130, 246, 0.5);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+        }
+        .empty-container-text {
+            color: rgba(255, 255, 255, 0.3);
+            text-align: center;
+            padding: 20px;
+            font-style: italic;
+        }
+        /* NEW: Message styling */
+        .message {
+            padding: 10px 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            font-weight: 500;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        .success-message {
+            background-color: rgba(16, 185, 129, 0.2);
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            color: #10b981;
+        }
+        .error-message {
+            background-color: rgba(239, 68, 68, 0.2);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            color: #ef4444;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen text-white flex flex-col">
+    <!-- Navbar -->
+    <nav class="border-b border-white/10 backdrop-blur-md">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <span class="text-2xl font-bold text-white">WebWatcher</span>
+                </div>
+                <div class="flex items-center">
+                    <a href="../Dashboard/dashboard.html" class="px-6 py-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors text-white">
+                        Back to Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="flex-grow flex items-center justify-center">
+        <div class="bg-white/5 backdrop-blur-lg p-8 rounded-xl border border-white/10 w-full max-w-2xl blue-glow">
+            <h2 class="text-2xl font-bold text-center mb-8 text-blue-400">Manage Your Watchlist</h2>
+
+            <!-- NEW: Message container -->
+            <div id="messageContainer" class="mb-4"></div>
+
+            <!-- Keywords Input -->
+            <div class="mb-6">
+                <div class="flex items-center justify-between">
+                    <label for="keywordInput" class="block text-sm font-medium text-gray-300 mb-2">Keywords</label>
+                    <span class="text-xs text-gray-400" id="keywordCounter">0/10</span>
+                </div>
+                <input
+                    id="keywordInput"
+                    type="text"
+                    class="w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-white/50"
+                    placeholder="Type a keyword and press Enter (Maximum 10)"
+                >
+                <div id="keywordContainer" class="items-container">
+                    <div class="empty-container-text" id="emptyKeywords">No keywords added yet</div>
+                </div>
+                <input type="hidden" id="keywordsHidden" name="keywords">
+            </div>
+
+            <!-- URLs Input -->
+            <div class="mb-6">
+                <div class="flex items-center justify-between">
+                    <label for="urlInput" class="block text-sm font-medium text-gray-300 mb-2">URLs</label>
+                    <span class="text-xs text-gray-400" id="urlCounter">0/10</span>
+                </div>
+                <input
+                    id="urlInput"
+                    type="text"
+                    class="w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-white/50"
+                    placeholder="Type a URL and press Enter (Maximum 10)"
+                >
+                <div id="urlContainer" class="items-container">
+                    <div class="empty-container-text" id="emptyUrls">No URLs added yet</div>
+                </div>
+                <input type="hidden" id="urlsHidden" name="urls">
+            </div>
+
+            <!-- Email Input -->
+            <div class="mb-6">
+                <label for="emailInput" class="block text-sm font-medium text-gray-300 mb-2">Email for Notifications</label>
+                <input
+                    id="emailInput"
+                    type="email"
+                    class="w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-white/50"
+                    placeholder="Enter your email for notifications"
+                >
+            </div>
+
+            <!-- Save Button -->
+            <div class="text-center">
+                <button
+                    id="saveButton"
+                    class="px-8 py-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 transform hover:scale-105"
+                >
+                    Save
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="border-t border-white/10 py-8 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 text-center text-gray-400">
+            <p>&copy; 2025 WebWatcher. All rights reserved.</p>
+        </div>
+    </footer>
+
+
+    <!-- JavaScript -->
+    <script>
+    // Arrays to store keywords and URLs
+    let keywords = [];
+    let urls = [];
+
+    // NEW: Function to show message
+    function showMessage(message, isError = false) {
+        // Clear any existing messages
+        const container = document.getElementById('messageContainer');
+        container.innerHTML = '';
+        
+        // Create message element
+        const msgElement = document.createElement('div');
+        msgElement.className = `message ${isError ? 'error-message' : 'success-message'}`;
+        msgElement.textContent = message;
+        
+        // Add to container
+        container.appendChild(msgElement);
+        
+        // Remove after 5 seconds
+        setTimeout(() => {
+            msgElement.style.opacity = '0';
+            msgElement.style.transform = 'translateY(-10px)';
+            msgElement.style.transition = 'all 0.3s ease';
+            
+            setTimeout(() => msgElement.remove(), 300);
+        }, 5000);
+    }
+
+    // Function to validate email
+    function validateEmail(email) {
+        const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return regex.test(email);
+    }
+
+    // Function to load existing watchlist data when the page loads
+    async function loadWatchlistData() {
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = '../login.html';
+                return;
+            }
+
+            const response = await fetch('/api/watchlist', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data) {
+                // If keywords exist, populate the array and update display
+                if (data.keywords) {
+                    keywords = data.keywords.split(',');
+                    updateKeywordDisplay();
+                }
+                
+                // If URLs exist, populate the array and update display
+                if (data.urls) {
+                    urls = data.urls.split('\n');
+                    updateUrlDisplay();
+                }
+                
+                // NEW: If email exists, set the email input value
+                if (data.email) {
+                    document.getElementById('emailInput').value = data.email;
+                }
+            }
+        } catch (err) {
+            console.error('Error loading watchlist:', err);
+            // Silent fail - just start with empty lists
+        }
+    }
+
+    // Function to update the keywords display
+    function updateKeywordDisplay() {
+        const container = document.getElementById('keywordContainer');
+        const emptyMessage = document.getElementById('emptyKeywords');
+        
+        // Update counter
+        document.getElementById('keywordCounter').textContent = `${keywords.length}/10`;
+        
+        // Show/hide empty message
+        if (keywords.length === 0) {
+            emptyMessage.style.display = 'block';
+            container.querySelectorAll('.keyword-pill').forEach(pill => pill.remove());
+            return;
+        } else {
+            emptyMessage.style.display = 'none';
+        }
+        
+        // Clear and rebuild pills
+        container.querySelectorAll('.keyword-pill').forEach(pill => pill.remove());
+        
+        keywords.forEach((keyword, index) => {
+            const pill = document.createElement('div');
+            pill.className = 'keyword-pill';
+            pill.innerHTML = `
+                <span>${keyword}</span>
+                <span class="keyword-x" data-index="${index}">×</span>
+            `;
+            container.appendChild(pill);
+        });
+        
+        // Update hidden input for form submission
+        document.getElementById('keywordsHidden').value = keywords.join(',');
+        
+        // Add click handlers for remove buttons
+        container.querySelectorAll('.keyword-x').forEach(button => {
+            button.addEventListener('click', function() {
+                const index = parseInt(this.getAttribute('data-index'));
+                keywords = keywords.filter((_, i) => i !== index);
+                updateKeywordDisplay();
+            });
+        });
+    }
+
+    // Function to update the URLs display
+    function updateUrlDisplay() {
+        const container = document.getElementById('urlContainer');
+        const emptyMessage = document.getElementById('emptyUrls');
+        
+        // Update counter
+        document.getElementById('urlCounter').textContent = `${urls.length}/10`;
+        
+        // Show/hide empty message
+        if (urls.length === 0) {
+            emptyMessage.style.display = 'block';
+            container.querySelectorAll('.url-item').forEach(item => item.remove());
+            return;
+        } else {
+            emptyMessage.style.display = 'none';
+        }
+        
+        // Clear and rebuild items
+        container.querySelectorAll('.url-item').forEach(item => item.remove());
+        
+        urls.forEach((url, index) => {
+            const urlItem = document.createElement('div');
+            urlItem.className = 'url-item';
+            urlItem.innerHTML = `
+                <span class="url-number">${index + 1}</span>
+                <span class="url-text">${url}</span>
+                <span class="keyword-x ml-auto" data-index="${index}">×</span>
+            `;
+            container.appendChild(urlItem);
+        });
+        
+        // Update hidden input for form submission
+        document.getElementById('urlsHidden').value = urls.join('\n');
+        
+        // Add click handlers for remove buttons
+        container.querySelectorAll('.url-item .keyword-x').forEach(button => {
+            button.addEventListener('click', function() {
+                const index = parseInt(this.getAttribute('data-index'));
+                urls = urls.filter((_, i) => i !== index);
+                updateUrlDisplay();
+            });
+        });
+    }
+
+    // Add event listener for keyword input
+    document.getElementById('keywordInput').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && this.value.trim()) {
+            e.preventDefault();
+            
+            // Check max keywords limit
+            if (keywords.length >= 10) {
+                showMessage('Maximum 10 keywords allowed', true);
+                return;
+            }
+            
+            // Add keyword to array (avoid duplicates)
+            const newKeyword = this.value.trim();
+            if (!keywords.includes(newKeyword)) {
+                keywords.push(newKeyword);
+                
+                // Clear input
+                this.value = '';
+                
+                // Update display
+                updateKeywordDisplay();
+            } else {
+                showMessage('This keyword is already in your list', true);
+                this.value = '';
+            }
+        }
+    });
+
+    // Add event listener for URL input
+    document.getElementById('urlInput').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && this.value.trim()) {
+            e.preventDefault();
+            
+            // Check max URLs limit
+            if (urls.length >= 10) {
+                showMessage('Maximum 10 URLs allowed', true);
+                return;
+            }
+            
+            // Add URL to array (avoid duplicates)
+            const newUrl = this.value.trim();
+            if (!urls.includes(newUrl)) {
+                urls.push(newUrl);
+                
+                // Clear input
+                this.value = '';
+                
+                // Update display
+                updateUrlDisplay();
+            } else {
+                showMessage('This URL is already in your list', true);
+                this.value = '';
+            }
+        }
+    });
+
+    document.getElementById('saveButton').addEventListener('click', async () => {
+        if (keywords.length === 0 || urls.length === 0) {
+            showMessage('Please add at least one keyword and one URL.', true);
+            return;
+        }
+
+        const email = document.getElementById('emailInput').value.trim();
+
+        // Validate email (optional)
+        if (email && !validateEmail(email)) {
+            showMessage('Please enter a valid email address.', true);
+            return;
+        }
+
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = '../login.html';
+                return;
+            }
+
+            const response = await fetch('/api/watchlist', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                },
+                body: JSON.stringify({ 
+                    keywords: keywords.join(','), 
+                    urls: urls.join('\n'),
+                    email: email // Include email in the request
+                }),
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                showMessage('Saved successfully!');
+                
+                // NEW: Show email-specific success message if available
+                if (data.emailStatus) {
+                    setTimeout(() => {
+                        showMessage(data.emailStatus);
+                    }, 1000);
+                }
+            } else {
+                showMessage(data.error || 'Failed to save. Please try again.', true);
+            }
+        } catch (err) {
+            console.error('Error:', err);
+            showMessage('An error occurred. Please try again.', true);
+        }
+    });
+
+    // Initialize displays and load existing data
+    document.addEventListener('DOMContentLoaded', () => {
+        loadWatchlistData();
+    });
+    </script>
+</body>
+</html>

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scraped Data Results - WebWatcher</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #1a1a1a 0%, #1e3a8a 50%, #0c4a6e 100%);
+        }
+        .blue-glow {
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+        }
+        .min-h-screen {
+            display: flex;
+            flex-direction: column;
+        }
+        .flex-grow {
+            flex-grow: 1;
+            display: flex;
+            align-items: center; /* Vertically center the content */
+            justify-content: center; /* Horizontally center the content */
+        }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen text-white">
+    <!-- Navbar -->
+    <nav class="border-b border-white/10 backdrop-blur-md">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <span class="text-2xl font-bold text-white">WebWatcher</span>
+                </div>
+                <div class="flex items-center">
+                    <a href="../index.html" id="logoutButton" class="px-6 py-2 rounded-full bg-blue-600 hover:bg-blue-700 transition-colors">
+                        Logout
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Scraped Data Results -->
+    <div class="flex-grow w-full">
+        <div class="max-w-6xl mx-auto px-4 py-8">
+            <h1 class="text-4xl font-bold text-center mb-8">Scraped Data Results</h1>
+            
+            <!-- Filter Options -->
+            <div class="mb-8 flex justify-between items-center">
+                <div class="flex items-center space-x-4">
+                    <label for="filter" class="text-gray-300">Filter by:</label>
+                    <select id="filter" class="bg-white/10 backdrop-blur-lg rounded-lg p-2 text-gray-300">
+                        <option value="all">All</option>
+                        <option value="tag1">Tag 1</option>
+                        <option value="tag2">Tag 2</option>
+                        <option value="tag3">Tag 3</option>
+                    </select>
+                </div>
+                <div>
+                    <input type="text" placeholder="Search..." class="bg-white/10 backdrop-blur-lg rounded-lg p-2 text-gray-300">
+                </div>
+            </div>
+
+            <!-- Data Table -->
+            <div class="bg-white/5 backdrop-blur-lg rounded-xl p-8 border border-white/10">
+                <table class="w-full text-left">
+                    <thead>
+                        <tr class="border-b border-white/10">
+                            <th class="py-3 px-4 text-gray-300">URL</th>
+                            <th class="py-3 px-4 text-gray-300">Title</th>
+                            <th class="py-3 px-4 text-gray-300">Keywords</th>
+                            <th class="py-3 px-4 text-gray-300">Date Scraped</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Sample Data Rows -->
+                        <tr class="border-b border-white/10 hover:bg-white/10 transition-colors">
+                            <td class="py-3 px-4 text-gray-300"><a href="https://example.com" class="text-blue-400 hover:text-blue-300">https://example.com</a></td>
+                            <td class="py-3 px-4 text-gray-300">Example Title 1</td>
+                            <td class="py-3 px-4 text-gray-300">keyword1, keyword2</td>
+                            <td class="py-3 px-4 text-gray-300">2023-10-01</td>
+                        </tr>
+                        <tr class="border-b border-white/10 hover:bg-white/10 transition-colors">
+                            <td class="py-3 px-4 text-gray-300"><a href="https://anotherexample.com" class="text-blue-400 hover:text-blue-300">https://anotherexample.com</a></td>
+                            <td class="py-3 px-4 text-gray-300">Example Title 2</td>
+                            <td class="py-3 px-4 text-gray-300">keyword3, keyword4</td>
+                            <td class="py-3 px-4 text-gray-300">2023-10-02</td>
+                        </tr>
+                        <tr class="border-b border-white/10 hover:bg-white/10 transition-colors">
+                            <td class="py-3 px-4 text-gray-300"><a href="https://yetanotherexample.com" class="text-blue-400 hover:text-blue-300">https://yetanotherexample.com</a></td>
+                            <td class="py-3 px-4 text-gray-300">Example Title 3</td>
+                            <td class="py-3 px-4 text-gray-300">keyword5, keyword6</td>
+                            <td class="py-3 px-4 text-gray-300">2023-10-03</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="border-t border-white/10 py-8">
+        <div class="max-w-7xl mx-auto px-4 text-center text-gray-400">
+            <p>&copy; 2025 WebWatcher. All rights reserved.</p>
+        </div>
+    </footer>
+</body>
+</html>
