@@ -3,8 +3,14 @@ const path = require('path');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const mongoose = require('mongoose');
+const axios = require('axios'); // Add axios for HTTP requests
+const cheerio = require('cheerio'); // Add cheerio for HTML parsing
+const cron = require('node-cron'); // Add node-cron for scheduling
+const nodemailer = require('nodemailer'); // Add nodemailer for email notifications
 const app = express();
+require('dotenv').config();
 const PORT = 3000;
+
 
 /******************************************************************************
  * Serve static files (your frontend HTML, CSS, JS)
@@ -53,6 +59,14 @@ const watchlistSchema = new mongoose.Schema({
     updatedAt: { type: Date, default: Date.now }
 });
 
+// Add a new schema for storing matched results
+const matchResultSchema = new mongoose.Schema({
+    watchlistId: { type: mongoose.Schema.Types.ObjectId, ref: 'Watchlist', required: true },
+    url: { type: String, required: true },
+    matchedKeywords: [String],
+    timestamp: { type: Date, default: Date.now }
+});
+
 
 /******************************************************************************
  * Create Mongoose Models
@@ -62,6 +76,9 @@ const User = mongoose.model('User', userSchema);
 
 // Create the Watchlist model
 const Watchlist = mongoose.model('Watchlist', watchlistSchema);
+
+// Create the MatchResult model
+const MatchResult = mongoose.model('MatchResult', matchResultSchema);
 
 
 /******************************************************************************
@@ -247,9 +264,211 @@ app.get('/api/watchlist', authenticate, async (req, res) => {
     }
 });
 
+/****************Route to get match results***********************/
+app.get('/api/matches', authenticate, async (req, res) => {
+    try {
+        const userId = req.user._id;
+        
+        // Find watchlist for the user
+        const watchlist = await Watchlist.findOne({ userId });
+        
+        if (!watchlist) {
+            return res.json([]);
+        }
+        
+        // Find matches for the watchlist
+        const matches = await MatchResult.find({ 
+            watchlistId: watchlist._id 
+        }).sort({ timestamp: -1 }); // Sort by newest first
+        
+        res.json(matches);
+    } catch (err) {
+        console.error('Error fetching matches:', err);
+        res.status(500).json({ error: 'Failed to fetch matches' });
+    }
+});
+
+/****************Route to manually trigger a scan***********************/
+app.post('/api/scan', authenticate, async (req, res) => {
+    try {
+        const userId = req.user._id;
+        
+        // Find watchlist for the user
+        const watchlist = await Watchlist.findOne({ userId });
+        
+        if (!watchlist) {
+            return res.status(404).json({ error: 'No watchlist found' });
+        }
+        
+        // Process the watchlist
+        const results = await processWatchlist(watchlist);
+        
+        res.json({ 
+            message: 'Scan completed', 
+            matches: results.filter(r => r.matchedKeywords.length > 0)
+        });
+    } catch (err) {
+        console.error('Error during manual scan:', err);
+        res.status(500).json({ error: 'Failed to complete scan' });
+    }
+});
+
 /******************************************************************************
- * Start the server
+ * Web Scraping Functionality
+ ******************************************************************************/
+
+// Email transporter configuration
+// You should replace these with your actual email credentials
+const transporter = nodemailer.createTransport({
+    service: 'gmail', // or your preferred service
+    auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASSWORD
+    }
+});
+
+// Initialize web scraper
+function initScraper() {
+    console.log('Initializing web scraper...');
+    
+    // Schedule the scraper to run every hour
+    // Schedule format: minute hour day-of-month month day-of-week
+    cron.schedule('0 */6 * * *', async () => {
+        console.log('Running scheduled scraping task:', new Date().toISOString());
+        try {
+            await scrapeAllWatchlists();
+        } catch (error) {
+            console.error('Error in scheduled scraping:', error);
+        }
+    });
+    
+    console.log('Web scraper initialized and scheduled');
+}
+
+// Main function to scrape all watchlists
+async function scrapeAllWatchlists() {
+    // Get all watchlists from the database
+    const watchlists = await Watchlist.find().populate('userId', 'username');
+    console.log(`Found ${watchlists.length} watchlists to process`);
+    
+    // Process each watchlist
+    for (const watchlist of watchlists) {
+        await processWatchlist(watchlist);
+    }
+}
+
+// Process a single watchlist
+async function processWatchlist(watchlist) {
+    const urlList = watchlist.urls.split('\n').filter(url => url.trim());
+    const keywordList = watchlist.keywords.split(',').map(k => k.trim());
+    
+    console.log(`Processing watchlist for user ${watchlist.userId.username || watchlist.userId}`);
+    console.log(`Keywords: ${keywordList.join(', ')}`);
+    
+    const results = [];
+    
+    for (const url of urlList) {
+        try {
+            // Skip empty URLs
+            if (!url.trim()) continue;
+            
+            // Add http:// prefix if missing
+            let processedUrl = url;
+            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                processedUrl = 'https://' + url;
+            }
+            
+            const matches = await scanUrlForKeywords(processedUrl, keywordList);
+            
+            if (matches.length > 0) {
+                console.log(`Found matches for URL ${processedUrl}: ${matches.join(', ')}`);
+                
+                // Create a new match result record
+                const matchResult = new MatchResult({
+                    watchlistId: watchlist._id,
+                    url: processedUrl,
+                    matchedKeywords: matches
+                });
+                await matchResult.save();
+                
+                results.push({
+                    url: processedUrl,
+                    matchedKeywords: matches
+                });
+                
+                // Send email notification if email is provided
+                if (watchlist.email) {
+                    await sendEmailNotification(watchlist.email, processedUrl, matches);
+                }
+            }
+        } catch (error) {
+            console.error(`Error scanning URL ${url}:`, error.message);
+            results.push({
+                url,
+                error: error.message,
+                matchedKeywords: []
+            });
+        }
+    }
+    
+    return results;
+}
+
+// Scan a single URL for keywords
+async function scanUrlForKeywords(url, keywords) {
+    console.log(`Scanning URL: ${url}`);
+    
+    try {
+        const response = await axios.get(url, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            },
+            timeout: 15000 // 15 second timeout
+        });
+        
+        const $ = cheerio.load(response.data);
+        const pageText = $('body').text().toLowerCase();
+        
+        // Check for each keyword in the page text
+        const matches = keywords.filter(keyword => 
+            pageText.includes(keyword.toLowerCase())
+        );
+        
+        return matches;
+    } catch (error) {
+        console.error(`Error fetching ${url}: ${error.message}`);
+        throw error;
+    }
+}
+
+// Send email notification when keywords are found
+async function sendEmailNotification(email, url, keywords) {
+    const mailOptions = {
+        from: 'app.webwatcher@gmail.com',
+        to: email,
+        subject: 'WebWatcher Alert: Keywords Found',
+        html: `
+            <h2>WebWatcher Alert</h2>
+            <p>We found keywords you're watching on a website:</p>
+            <p><strong>URL:</strong> <a href="${url}">${url}</a></p>
+            <p><strong>Keywords Found:</strong> ${keywords.join(', ')}</p>
+            <p>Log in to your WebWatcher account to see more details.</p>
+        `
+    };
+    
+    try {
+        await transporter.sendMail(mailOptions);
+        console.log(`Notification email sent to ${email}`);
+    } catch (error) {
+        console.error('Error sending email notification:', error);
+    }
+}
+
+/******************************************************************************
+ * Start the server and initialize the scraper
  ******************************************************************************/
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
+    // Initialize the web scraper after the server starts
+    initScraper();
 });

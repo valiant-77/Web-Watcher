@@ -22,6 +22,22 @@
             align-items: center; /* Vertically center the content */
             justify-content: center; /* Horizontally center the content */
         }
+        .loading-spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid #fff;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+        }
     </style>
 </head>
 <body class="gradient-bg min-h-screen text-white">
@@ -32,7 +48,13 @@
                 <div class="flex items-center">
                     <span class="text-2xl font-bold text-white">WebWatcher</span>
                 </div>
-                <div class="flex items-center">
+                <div class="flex items-center space-x-4">
+                    <a href="watchlist.html" class="px-4 py-2 rounded-full bg-blue-600/20 hover:bg-blue-600/40 transition-colors">
+                        Watchlist
+                    </a>
+                    <a href="#" id="scanNowButton" class="px-4 py-2 rounded-full bg-green-600/80 hover:bg-green-600 transition-colors">
+                        Scan Now
+                    </a>
                     <a href="../index.html" id="logoutButton" class="px-6 py-2 rounded-full bg-blue-600 hover:bg-blue-700 transition-colors">
                         Logout
                     </a>
@@ -49,50 +71,37 @@
             <!-- Filter Options -->
             <div class="mb-8 flex justify-between items-center">
                 <div class="flex items-center space-x-4">
-                    <label for="filter" class="text-gray-300">Filter by:</label>
-                    <select id="filter" class="bg-white/10 backdrop-blur-lg rounded-lg p-2 text-gray-300">
-                        <option value="all">All</option>
-                        <option value="tag1">Tag 1</option>
-                        <option value="tag2">Tag 2</option>
-                        <option value="tag3">Tag 3</option>
+                    <label for="keywordFilter" class="text-gray-300">Filter by keyword:</label>
+                    <select id="keywordFilter" class="bg-white/10 backdrop-blur-lg rounded-lg p-2 text-gray-300">
+                        <option value="all">All Keywords</option>
+                        <!-- Will be populated dynamically -->
                     </select>
                 </div>
                 <div>
-                    <input type="text" placeholder="Search..." class="bg-white/10 backdrop-blur-lg rounded-lg p-2 text-gray-300">
+                    <input type="text" id="searchInput" placeholder="Search URLs..." class="bg-white/10 backdrop-blur-lg rounded-lg p-2 text-gray-300">
                 </div>
             </div>
 
             <!-- Data Table -->
             <div class="bg-white/5 backdrop-blur-lg rounded-xl p-8 border border-white/10">
-                <table class="w-full text-left">
+                <div id="loadingIndicator" class="flex justify-center py-8">
+                    <div class="loading-spinner"></div>
+                </div>
+                <div id="emptyState" class="empty-state hidden">
+                    <p class="text-xl text-gray-300">No matching results found.</p>
+                    <p class="text-gray-400 mt-2">Try adjusting your filters or adding more websites to your watchlist.</p>
+                </div>
+                <table id="resultsTable" class="w-full text-left hidden">
                     <thead>
                         <tr class="border-b border-white/10">
                             <th class="py-3 px-4 text-gray-300">URL</th>
-                            <th class="py-3 px-4 text-gray-300">Title</th>
-                            <th class="py-3 px-4 text-gray-300">Keywords</th>
-                            <th class="py-3 px-4 text-gray-300">Date Scraped</th>
+                            <th class="py-3 px-4 text-gray-300">Keywords Found</th>
+                            <th class="py-3 px-4 text-gray-300">Date Detected</th>
+                            <th class="py-3 px-4 text-gray-300">Actions</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <!-- Sample Data Rows -->
-                        <tr class="border-b border-white/10 hover:bg-white/10 transition-colors">
-                            <td class="py-3 px-4 text-gray-300"><a href="https://example.com" class="text-blue-400 hover:text-blue-300">https://example.com</a></td>
-                            <td class="py-3 px-4 text-gray-300">Example Title 1</td>
-                            <td class="py-3 px-4 text-gray-300">keyword1, keyword2</td>
-                            <td class="py-3 px-4 text-gray-300">2023-10-01</td>
-                        </tr>
-                        <tr class="border-b border-white/10 hover:bg-white/10 transition-colors">
-                            <td class="py-3 px-4 text-gray-300"><a href="https://anotherexample.com" class="text-blue-400 hover:text-blue-300">https://anotherexample.com</a></td>
-                            <td class="py-3 px-4 text-gray-300">Example Title 2</td>
-                            <td class="py-3 px-4 text-gray-300">keyword3, keyword4</td>
-                            <td class="py-3 px-4 text-gray-300">2023-10-02</td>
-                        </tr>
-                        <tr class="border-b border-white/10 hover:bg-white/10 transition-colors">
-                            <td class="py-3 px-4 text-gray-300"><a href="https://yetanotherexample.com" class="text-blue-400 hover:text-blue-300">https://yetanotherexample.com</a></td>
-                            <td class="py-3 px-4 text-gray-300">Example Title 3</td>
-                            <td class="py-3 px-4 text-gray-300">keyword5, keyword6</td>
-                            <td class="py-3 px-4 text-gray-300">2023-10-03</td>
-                        </tr>
+                    <tbody id="resultsBody">
+                        <!-- Results will be populated dynamically -->
                     </tbody>
                 </table>
             </div>
@@ -105,5 +114,231 @@
             <p>&copy; 2025 WebWatcher. All rights reserved.</p>
         </div>
     </footer>
+
+    <!-- Scripts -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check for authentication
+            const token = localStorage.getItem('token');
+            if (!token) {
+                // Redirect to login if not authenticated
+                window.location.href = '../login.html ';
+                return;
+            }
+
+            // Get UI elements
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            const emptyState = document.getElementById('emptyState');
+            const resultsTable = document.getElementById('resultsTable');
+            const resultsBody = document.getElementById('resultsBody');
+            const keywordFilter = document.getElementById('keywordFilter');
+            const searchInput = document.getElementById('searchInput');
+            const scanNowButton = document.getElementById('scanNowButton');
+            const logoutButton = document.getElementById('logoutButton');
+
+            // Track all results and keywords for filtering
+            let allResults = [];
+            let allKeywords = new Set();
+
+            // Initial data load
+            fetchMatchResults();
+
+            // Setup event listeners
+            keywordFilter.addEventListener('change', filterResults);
+            searchInput.addEventListener('input', filterResults);
+            scanNowButton.addEventListener('click', triggerScan);
+            logoutButton.addEventListener('click', logout);
+
+            // Fetch match results from the API
+            function fetchMatchResults() {
+                showLoading();
+                
+                fetch('/api/matches', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch results');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    allResults = data;
+                    
+                    // Extract all unique keywords
+                    allKeywords.clear();
+                    data.forEach(result => {
+                        result.matchedKeywords.forEach(keyword => {
+                            allKeywords.add(keyword);
+                        });
+                    });
+                    
+                    // Populate keyword filter
+                    populateKeywordFilter();
+                    
+                    // Display results
+                    displayResults(data);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    hideLoading();
+                    showEmptyState('Error loading results. Please try again later.');
+                });
+            }
+
+            // Populate the keyword filter dropdown
+            function populateKeywordFilter() {
+                // Clear existing options except "All Keywords"
+                keywordFilter.innerHTML = '<option value="all">All Keywords</option>';
+                
+                // Add each keyword as an option
+                allKeywords.forEach(keyword => {
+                    const option = document.createElement('option');
+                    option.value = keyword;
+                    option.textContent = keyword;
+                    keywordFilter.appendChild(option);
+                });
+            }
+
+            // Display results in the table
+            function displayResults(results) {
+                hideLoading();
+                
+                if (results.length === 0) {
+                    showEmptyState();
+                    return;
+                }
+                
+                // Clear existing results
+                resultsBody.innerHTML = '';
+                
+                // Add each result to the table
+                results.forEach(result => {
+                    const row = document.createElement('tr');
+                    row.className = 'border-b border-white/10 hover:bg-white/10 transition-colors';
+                    
+                    // Format the date
+                    const date = new Date(result.timestamp);
+                    const formattedDate = date.toLocaleString();
+                    
+                    row.innerHTML = `
+                        <td class="py-3 px-4 text-gray-300">
+                            <a href="${result.url}" target="_blank" class="text-blue-400 hover:text-blue-300">
+                                ${result.url}
+                            </a>
+                        </td>
+                        <td class="py-3 px-4 text-gray-300">
+                            ${result.matchedKeywords.map(keyword => 
+                                `<span class="inline-block bg-blue-500/20 text-blue-300 rounded-full px-2 py-1 text-xs mr-1 mb-1">${keyword}</span>`
+                            ).join('')}
+                        </td>
+                        <td class="py-3 px-4 text-gray-300">${formattedDate}</td>
+                        <td class="py-3 px-4 text-gray-300">
+                            <button class="text-blue-400 hover:text-blue-300 mr-2" 
+                                onclick="window.open('${result.url}', '_blank')">
+                                Visit
+                            </button>
+                        </td>
+                    `;
+                    
+                    resultsBody.appendChild(row);
+                });
+                
+                resultsTable.classList.remove('hidden');
+            }
+
+            // Filter results based on keyword and search input
+            function filterResults() {
+                const keywordValue = keywordFilter.value;
+                const searchValue = searchInput.value.toLowerCase();
+                
+                let filteredResults = allResults;
+                
+                // Filter by keyword if not "all"
+                if (keywordValue !== 'all') {
+                    filteredResults = filteredResults.filter(result => 
+                        result.matchedKeywords.includes(keywordValue)
+                    );
+                }
+                
+                // Filter by search text
+                if (searchValue) {
+                    filteredResults = filteredResults.filter(result => 
+                        result.url.toLowerCase().includes(searchValue)
+                    );
+                }
+                
+                // Display filtered results
+                displayResults(filteredResults);
+            }
+
+            // Trigger a manual scan
+            function triggerScan(event) {
+                event.preventDefault();
+                
+                scanNowButton.textContent = 'Scanning...';
+                scanNowButton.disabled = true;
+                
+                fetch('/api/scan', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Scan failed');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // Reload results after scan
+                    fetchMatchResults();
+                    scanNowButton.textContent = 'Scan Now';
+                    scanNowButton.disabled = false;
+                    
+                    // Show success message
+                    alert(`Scan completed. Found ${data.matches.length} matches.`);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    scanNowButton.textContent = 'Scan Now';
+                    scanNowButton.disabled = false;
+                    alert('Scan failed. Please try again later.');
+                });
+            }
+
+            // Logout function
+            function logout(event) {
+                event.preventDefault();
+                localStorage.removeItem('token');
+                window.location.href = '../index.html';
+            }
+
+            // Show loading indicator
+            function showLoading() {
+                loadingIndicator.classList.remove('hidden');
+                resultsTable.classList.add('hidden');
+                emptyState.classList.add('hidden');
+            }
+
+            // Hide loading indicator
+            function hideLoading() {
+                loadingIndicator.classList.add('hidden');
+            }
+
+            // Show empty state with optional message
+            function showEmptyState(message) {
+                if (message) {
+                    emptyState.querySelector('p').textContent = message;
+                }
+                emptyState.classList.remove('hidden');
+                resultsTable.classList.add('hidden');
+            }
+        });
+    </script>
 </body>
 </html>
