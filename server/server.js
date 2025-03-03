@@ -313,6 +313,40 @@ app.post('/api/scan', authenticate, async (req, res) => {
     }
 });
 
+
+
+/****************Route to delete a match result***********************/
+app.delete('/api/matches/:id', authenticate, async (req, res) => {
+    try {
+        const matchId = req.params.id;
+        const userId = req.user._id;
+        
+        // Find the watchlist for this user
+        const watchlist = await Watchlist.findOne({ userId });
+        
+        if (!watchlist) {
+            return res.status(404).json({ error: 'Watchlist not found' });
+        }
+        
+        // Find the match and ensure it belongs to this user's watchlist
+        const match = await MatchResult.findOne({ 
+            _id: matchId,
+            watchlistId: watchlist._id
+        });
+        
+        if (!match) {
+            return res.status(404).json({ error: 'Match result not found or not authorized' });
+        }
+        
+        // Delete the match
+        await MatchResult.deleteOne({ _id: matchId });
+        
+        res.json({ message: 'Match result deleted successfully' });
+    } catch (err) {
+        console.error('Error deleting match result:', err);
+        res.status(500).json({ error: 'Failed to delete match result' });
+    }
+});
 /******************************************************************************
  * Web Scraping Functionality
  ******************************************************************************/
