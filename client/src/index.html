@@ -31,24 +31,50 @@
         </div>
     </nav>
 
-    <!-- Hero Section -->
-    <div class="max-w-7xl mx-auto px-4 py-24">
-        <div class="flex flex-col lg:flex-row items-center justify-between">
-            <div class="lg:w-1/2 space-y-6">
-                
-                <h1 class="text-6xl font-bold">WebWatcher</h1>
-                <p class="text-2xl text-gray-300">
-                    Never Miss Another Update from Your Favorite Websites
-                </p>
-                <a href="#" class="inline-block px-8 py-3 rounded-full bg-blue-600 hover:bg-blue-700 transition-colors text-lg">
-                    Get Started
-                </a>
-            </div>
-            <div class="lg:w-1/2 mt-12 lg:mt-0">
-                <img src="/api/placeholder/600/400" alt="Website monitoring dashboard" class="rounded-lg blue-glow" />
+<!-- Hero Section -->
+
+<section class="max-w-7xl mx-auto px-4 py-24 md:py-32">
+    <div class="text-center space-y-12">
+        <h1 class="text-5xl md:text-6xl font-extrabold leading-tight text-blue-500">
+            WebWatcher
+        </h1>
+            
+        
+        <p class="text-2xl md:text-3xl text-gray-200 font-medium max-w-3xl mx-auto">
+            Never miss another update from your favorite websites
+        </p>
+        
+        <div class="flex flex-col sm:flex-row gap-6 justify-center"> 
+            <a href="#demo-video" 
+               class="flex items-center justify-center px-8 py-4 rounded-full 
+                     bg-white/10 hover:bg-white/20 transition-colors 
+                     text-lg font-medium group">
+                <svg class="w-8 h-8 mr-3  group-hover:text-blue-500 transition-colors" 
+                     fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                          d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                          d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                Watch Demo
+            </a>
+        </div>
+        
+        <!-- Video Modal -->
+        <div id="demo-video" class="hidden fixed inset-0 bg-black/80 z-50">
+            <div class="max-w-4xl mx-auto my-10">
+                <video controls class="w-full rounded-lg shadow-2xl">
+                    <source src="your-video.mp4" type="video/mp4">
+                    Your browser does not support the video tag.
+                </video>
+                <button onclick="document.getElementById('demo-video').classList.add('hidden')"
+                        class="absolute top-4 right-4 text-white text-3xl hover:text-red-500 transition-colors">
+                    &times;
+                </button>
             </div>
         </div>
     </div>
+</section>
 
     <!-- Features -->
     <div class="max-w-7xl mx-auto px-4 py-24">
@@ -59,7 +85,7 @@
             </div>
             <div class="bg-white/5 backdrop-blur-lg rounded-xl p-8 border border-white/10">
                 <h3 class="text-xl font-semibold mb-4 text-blue-400">Instant Alerts</h3>
-                <p class="text-gray-300">Get notified immediately when changes occur on your tracked websites.</p>
+                <p class="text-gray-300">Get notified  when changes occur on your tracked websites.</p>
             </div>
             <div class="bg-white/5 backdrop-blur-lg rounded-xl p-8 border border-white/10">
                 <h3 class="text-xl font-semibold mb-4 text-blue-400">Smart Analysis</h3>
@@ -78,10 +104,10 @@
                     <span class="bg-blue-600 text-white text-xl font-bold rounded-full w-12 h-12 flex items-center justify-center">
                         1
                     </span>
-                    <h3 class="text-2xl font-bold">Add Websites</h3>
+                    <h3 class="text-2xl font-bold">Add Keywords</h3>
                 </div>
                 <p class="text-gray-300 text-lg">
-                    Simply paste the URL of any website you want to monitor and set your tracking preferences.
+                    Add the keywords that you want to track in your desired websites.
                 </p>
             </div>
 
@@ -90,10 +116,10 @@
                     <span class="bg-blue-600 text-white text-xl font-bold rounded-full w-12 h-12 flex items-center justify-center">
                         2
                     </span>
-                    <h3 class="text-2xl font-bold">Customize Tracking</h3>
+                    <h3 class="text-2xl font-bold">Add Websites</h3>
                 </div>
                 <p class="text-gray-300 text-lg">
-                    Define what changes matter to you - text updates, price changes, new items, or entire page modifications.
+                    Simply paste the URL of any website you want to monitor.
                 </p>
             </div>
 
@@ -105,7 +131,7 @@
                     <h3 class="text-2xl font-bold">Get Notified</h3>
                 </div>
                 <p class="text-gray-300 text-lg">
-                    Receive instant notifications through email, SMS, or push notifications when changes are detected.
+                    Receive notifications through email when changes are detected.
                 </p>
             </div>
         </div>
