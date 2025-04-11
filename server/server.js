@@ -3,13 +3,13 @@ const path = require('path');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const mongoose = require('mongoose');
-const axios = require('axios'); // Add axios for HTTP requests
-const cheerio = require('cheerio'); // Add cheerio for HTML parsing
-const cron = require('node-cron'); // Add node-cron for scheduling
-const nodemailer = require('nodemailer'); // Add nodemailer for email notifications
+const axios = require('axios');
+const cheerio = require('cheerio');
+const cron = require('node-cron');
+const nodemailer = require('nodemailer');
 const app = express();
 require('dotenv').config();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 
 /******************************************************************************
@@ -23,8 +23,8 @@ app.use(express.static(path.join(__dirname, '../client/src')));
  * Connect to MongoDB
  ******************************************************************************/
 // MongoDB connection
-mongoose.connect('mongodb://localhost:27018/webwatcher', {
-})
+const MONGODB_URI = process.env.MONGODB_URI;
+mongoose.connect(MONGODB_URI)
 .then(() => console.log('Connected to MongoDB'))
 .catch((err) => console.error('Failed to connect to MongoDB:', err));
 
@@ -85,6 +85,8 @@ const MatchResult = mongoose.model('MatchResult', matchResultSchema);
  * Authentication Middleware
  ******************************************************************************/
 // Authentication middleware
+const JWT_SECRET = process.env.JWT_SECRET;
+
 const authenticate = (req, res, next) => {
     const authHeader = req.header('Authorization');
 
@@ -96,7 +98,7 @@ const authenticate = (req, res, next) => {
 
     try {
         // Verify the token
-        const decoded = jwt.verify(token, 'your-secret-key');
+        const decoded = jwt.verify(token, JWT_SECRET);
         req.user = decoded;
         next();
     } catch (err) {
@@ -160,7 +162,7 @@ app.post('/api/login', async (req, res) => {
         }
 
         // Generate a JWT token
-        const token = jwt.sign({ _id: user._id }, 'your-secret-key', { expiresIn: '1h' });
+        const token = jwt.sign({ _id: user._id }, JWT_SECRET, { expiresIn: '1h' });
 
         // Return the token
         res.json({ token });
@@ -347,12 +349,47 @@ app.delete('/api/matches/:id', authenticate, async (req, res) => {
         res.status(500).json({ error: 'Failed to delete match result' });
     }
 });
+
+/****************Route to handle feedback submissions***********************/
+app.post('/api/feedback', async (req, res) => {
+    try {
+        const { feedback, email,Name } = req.body;
+        const defaultEmail = process.env.FEEDBACK_EMAIL || process.env.EMAIL_USER; // Use a dedicated feedback email or fall back to your main email
+        
+        if (!feedback || feedback.trim() === '') {
+            return res.status(400).json({ error: 'Feedback content is required' });
+        }
+
+        // Prepare email content
+        const mailOptions = {
+            from: process.env.EMAIL_USER,
+            to: defaultEmail,
+            subject: 'WebWatcher Feedback',
+            html: `
+                <h2>New Feedback Received</h2>
+                <p><strong>Feedback:</strong> ${feedback}</p>
+                ${Name ? `<p><strong>User Name:</strong> ${Name}</p>` : '<p><strong>User Name:</strong> Not provided</p>'}
+                ${email ? `<p><strong>User Email:</strong> ${email}</p>` : '<p><strong>User Email:</strong> Not provided</p>'}
+                <p><strong>Timestamp:</strong> ${new Date().toLocaleString()}</p>
+            `
+        };
+        
+        // Send the email
+        await transporter.sendMail(mailOptions);
+        console.log('Feedback email sent successfully');
+        
+        res.status(200).json({ message: 'Feedback submitted successfully' });
+    } catch (err) {
+        console.error('Error submitting feedback:', err);
+        res.status(500).json({ error: 'Failed to submit feedback' });
+    }
+});
+
 /******************************************************************************
  * Web Scraping Functionality
  ******************************************************************************/
 
 // Email transporter configuration
-// You should replace these with your actual email credentials
 const transporter = nodemailer.createTransport({
     service: 'gmail', // or your preferred service
     auth: {
@@ -365,8 +402,7 @@ const transporter = nodemailer.createTransport({
 function initScraper() {
     console.log('Initializing web scraper...');
     
-    // Schedule the scraper to run every hour
-    // Schedule format: minute hour day-of-month month day-of-week
+    // Schedule the scraper to run every 6 hours
     cron.schedule('0 */6 * * *', async () => {
         console.log('Running scheduled scraping task:', new Date().toISOString());
         try {
@@ -478,7 +514,7 @@ async function scanUrlForKeywords(url, keywords) {
 // Send email notification when keywords are found
 async function sendEmailNotification(email, url, keywords) {
     const mailOptions = {
-        from: 'app.webwatcher@gmail.com',
+        from: process.env.EMAIL_USER,
         to: email,
         subject: 'WebWatcher Alert: Keywords Found',
         html: `
@@ -502,7 +538,7 @@ async function sendEmailNotification(email, url, keywords) {
  * Start the server and initialize the scraper
  ******************************************************************************/
 app.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
+    console.log(`Server is running on port ${PORT}`);
     // Initialize the web scraper after the server starts
     initScraper();
 });

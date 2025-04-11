@@ -80,16 +80,16 @@
     <div class="max-w-7xl mx-auto px-4 py-24">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div class="bg-white/5 backdrop-blur-lg rounded-xl p-8 border border-white/10">
+                <h3 class="text-xl font-semibold mb-4 text-blue-400">Automate Your Web Monitoring</h3>
+                <p class="text-gray-300">Set keywords, scrape URLs, and never miss an update.</p>
+            </div>
+            <div class="bg-white/5 backdrop-blur-lg rounded-xl p-8 border border-white/10">
                 <h3 class="text-xl font-semibold mb-4 text-blue-400">Track Changes</h3>
                 <p class="text-gray-300">Monitor any website for updates, price changes, or new content automatically.</p>
             </div>
             <div class="bg-white/5 backdrop-blur-lg rounded-xl p-8 border border-white/10">
                 <h3 class="text-xl font-semibold mb-4 text-blue-400">Instant Alerts</h3>
-                <p class="text-gray-300">Get notified  when changes occur on your tracked websites.</p>
-            </div>
-            <div class="bg-white/5 backdrop-blur-lg rounded-xl p-8 border border-white/10">
-                <h3 class="text-xl font-semibold mb-4 text-blue-400">Smart Analysis</h3>
-                <p class="text-gray-300">Powerful filters and custom rules to track exactly what matters to you.</p>
+                <p class="text-gray-300">Get notified when changes occur on your tracked websites.</p>
             </div>
         </div>
     </div>
@@ -137,11 +137,137 @@
         </div>
     </div>
 
-    <!-- Footer -->
-    <footer class="border-t border-white/10 py-8">
+     <!-- Footer -->
+     <footer class="border-t border-white/10 py-8">
         <div class="max-w-7xl mx-auto px-4 text-center text-gray-400">
             <p>&copy; 2025 WebWatcher. All rights reserved.</p>
         </div>
     </footer>
+
+    <!-- Floating Feedback Button -->
+    <button onclick="document.getElementById('feedback-modal').classList.remove('hidden')"
+    class="fixed bottom-6 right-6 bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-full shadow-lg transition-all hover:scale-110">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+    </svg>
+    </button>
+    
+    <!-- Feedback Modal -->
+    <div id="feedback-modal" class="fixed inset-0 bg-black/80 z-50 hidden">
+    <div class="min-h-full flex items-center justify-center p-4">
+    <div class="bg-white/5 backdrop-blur-lg rounded-xl p-8 border border-white/10 max-w-md w-full mx-4">
+        <div class="flex justify-between items-center mb-6">
+            <h3 class="text-2xl font-bold">Feedback</h3>
+            <button onclick="document.getElementById('feedback-modal').classList.add('hidden')" 
+                class="text-gray-400 hover:text-white text-2xl">&times;</button>
+        </div>
+        
+        <!-- Form Content -->
+        <div id="form-container">
+            <form id="feedback-form" class="space-y-4">
+                <textarea id="feedback-text" rows="4" placeholder="Your feedback..." 
+                    class="w-full bg-white/10 border border-white/20 rounded-lg p-3 text-white"></textarea>
+                <input id="User-name" type="text" placeholder="Name" 
+                    class="w-full bg-white/10 border border-white/20 rounded-lg p-3 text-white">
+                <input id="feedback-email" type="email" placeholder="Email (optional)" 
+                    class="w-full bg-white/10 border border-white/20 rounded-lg p-3 text-white">
+                <button type="submit" id="submit-button"
+                    class="w-full py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors text-white">
+                    Submit
+                </button>
+            </form>
+        </div>
+        
+        <!-- Loading State (Hidden by default) -->
+        <div id="loading-state" class="hidden">
+            <div class="flex justify-center items-center py-6">
+                <div class="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
+            </div>
+            <p class="text-center text-white">Submitting your feedback...</p>
+        </div>
+        
+        <!-- Success Message (Hidden by default) -->
+        <div id="success-message" class="hidden space-y-4 text-center">
+            <div class="flex justify-center items-center py-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+            </div>
+            <h4 class="text-xl font-bold text-white">Thank you for your feedback!</h4>
+            <button onclick="resetFeedbackModal()" 
+                class="w-full py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors text-white mt-4">
+                Close
+            </button>
+        </div>
+    </div>
+    </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const feedbackForm = document.getElementById('feedback-form');
+            const formContainer = document.getElementById('form-container');
+            const loadingState = document.getElementById('loading-state');
+            const successMessage = document.getElementById('success-message');
+            
+            feedbackForm.addEventListener('submit', async function(event) {
+                event.preventDefault();
+                
+                // Show loading state
+                formContainer.classList.add('hidden');
+                loadingState.classList.remove('hidden');
+                
+                const feedbackText = document.getElementById('feedback-text').value;
+                const userName = document.getElementById('User-name').value;
+                const email = document.getElementById('feedback-email').value;
+                
+                try {
+                    const response = await fetch('/api/feedback', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            feedback: feedbackText,
+                            Name: userName,
+                            email: email
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (response.ok) {
+                        // Hide loading state and show success message
+                        loadingState.classList.add('hidden');
+                        successMessage.classList.remove('hidden');
+                        
+                        // Reset the form
+                        feedbackForm.reset();
+                    } else {
+                        // Show error in the form area
+                        loadingState.classList.add('hidden');
+                        formContainer.classList.remove('hidden');
+                        alert('Error: ' + (data.error || 'Failed to submit feedback'));
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    // Return to form and show error
+                    loadingState.classList.add('hidden');
+                    formContainer.classList.remove('hidden');
+                    alert('An error occurred. Please try again later.');
+                }
+            });
+        });
+        
+        function resetFeedbackModal() {
+            // Hide modal
+            document.getElementById('feedback-modal').classList.add('hidden');
+            
+            // Reset to initial state for next opening
+            document.getElementById('success-message').classList.add('hidden');
+            document.getElementById('loading-state').classList.add('hidden');
+            document.getElementById('form-container').classList.remove('hidden');
+        }
+    </script>
 </body>
 </html>

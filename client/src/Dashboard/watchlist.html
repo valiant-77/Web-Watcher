@@ -135,16 +135,19 @@
     </style>
 </head>
 <body class="gradient-bg min-h-screen text-white flex flex-col">
-    <!-- Navbar -->
+    <!-- Navbar (without Scan Now button) -->
     <nav class="border-b border-white/10 backdrop-blur-md">
         <div class="max-w-7xl mx-auto px-4">
             <div class="flex justify-between items-center h-16">
                 <div class="flex items-center">
                     <span class="text-2xl font-bold text-white">WebWatcher</span>
                 </div>
-                <div class="flex items-center">
-                    <a href="../Dashboard/dashboard.html" class="px-6 py-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors text-white">
-                        Back to Dashboard
+                <div class="flex items-center space-x-4">
+                    <a href="./results.html" class="px-4 py-2 rounded-full bg-blue-600/20 hover:bg-blue-600/40 transition-colors">
+                        Results
+                    </a>
+                    <a href="dashboard.html" class="px-4 py-2 rounded-full bg-blue-600/20 hover:bg-blue-600/40 transition-colors">
+                        Dashboard
                     </a>
                 </div>
             </div>
