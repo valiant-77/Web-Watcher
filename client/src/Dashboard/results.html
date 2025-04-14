@@ -207,6 +207,38 @@
             display: block;
         }
         
+        /* Message notification styles */
+        .message {
+            padding: 10px 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            font-weight: 500;
+            animation: messageSlideIn 0.3s ease-out;
+        }
+        
+        .success-message {
+            background-color: rgba(16, 185, 129, 0.2);
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            color: #10b981;
+        }
+        
+        .error-message {
+            background-color: rgba(239, 68, 68, 0.2);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            color: #ef4444;
+        }
+        
+        @keyframes messageSlideIn {
+            from {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
         @media (max-width: 768px) {
             .hamburger {
                 display: block;
@@ -266,6 +298,9 @@
     <div class="flex-grow w-full">
         <div class="max-w-6xl mx-auto px-4 py-8">
             <h1 class="text-4xl font-bold text-center mb-8">Scraped Data Results</h1>
+            
+            <!-- Message container - Added this -->
+            <div id="messageContainer" class="mb-4"></div>
             
             <!-- Filter Options -->
             <div class="mb-8 flex flex-wrap justify-between items-center filter-container">
@@ -404,6 +439,34 @@
                 }
             });
 
+            // Function to show message - Added this
+            function showMessage(message, isError = false) {
+                // Clear any existing messages
+                const container = document.getElementById('messageContainer');
+                container.innerHTML = '';
+                
+                // Create message element
+                const msgElement = document.createElement('div');
+                msgElement.className = `message ${isError ? 'error-message' : 'success-message'}`;
+                msgElement.textContent = message;
+                
+                // Add to container
+                container.appendChild(msgElement);
+                
+                // Scroll to make sure message is visible
+                window.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
+                });
+                
+                // Remove after 5 seconds
+                setTimeout(() => {
+                    if (container.contains(msgElement)) {
+                        container.removeChild(msgElement);
+                    }
+                }, 5000);
+            }
+
             // Fetch match results from the API
             function fetchMatchResults() {
                 showLoading();
@@ -440,6 +503,7 @@
                     console.error('Error:', error);
                     hideLoading();
                     showEmptyState('Error loading results. Please try again later.');
+                    showMessage('Error loading results. Please try again later.', true);
                 });
             }
 
@@ -556,10 +620,14 @@
                     if (allResults.length === 0) {
                         showEmptyState();
                     }
+                    
+                    // Show success message instead of alert
+                    showMessage('Result successfully deleted');
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    alert('Failed to delete result. Please try again.');
+                    // Show error message instead of alert
+                    showMessage('Failed to delete result. Please try again.', true);
                 });
             }
             
@@ -606,14 +674,15 @@
                     scanNowButton.textContent = 'Scan Now';
                     scanNowButton.disabled = false;
                     
-                    // Show success message
-                    alert(`Scan completed. Found ${data.matches.length} matches.`);
+                    // Show success message instead of alert
+                    showMessage(`Scan completed. Found ${data.matches.length} matches.`);
                 })
                 .catch(error => {
                     console.error('Error:', error);
                     scanNowButton.textContent = 'Scan Now';
                     scanNowButton.disabled = false;
-                    alert('Scan failed. Please try again later.');
+                    // Show error message instead of alert
+                    showMessage('Scan failed. Please try again later.', true);
                 });
             }
 

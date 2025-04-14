@@ -171,6 +171,8 @@
                     class="w-full bg-white/10 border border-white/20 rounded-lg p-3 text-white">
                 <input id="feedback-email" type="email" placeholder="Email (optional)" 
                     class="w-full bg-white/10 border border-white/20 rounded-lg p-3 text-white">
+                <!-- Added error message div -->
+                <div id="error-message" class="text-red-400 text-sm hidden"></div>
                 <button type="submit" id="submit-button"
                     class="w-full py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors text-white">
                     Submit
@@ -209,9 +211,14 @@
             const formContainer = document.getElementById('form-container');
             const loadingState = document.getElementById('loading-state');
             const successMessage = document.getElementById('success-message');
+            const errorMessage = document.getElementById('error-message');
             
             feedbackForm.addEventListener('submit', async function(event) {
                 event.preventDefault();
+                
+                // Clear any previous error
+                errorMessage.classList.add('hidden');
+                errorMessage.textContent = '';
                 
                 // Show loading state
                 formContainer.classList.add('hidden');
@@ -247,14 +254,16 @@
                         // Show error in the form area
                         loadingState.classList.add('hidden');
                         formContainer.classList.remove('hidden');
-                        alert('Error: ' + (data.error || 'Failed to submit feedback'));
+                        errorMessage.textContent = data.error || 'Failed to submit feedback. Please try again.';
+                        errorMessage.classList.remove('hidden');
                     }
                 } catch (error) {
                     console.error('Error:', error);
                     // Return to form and show error
                     loadingState.classList.add('hidden');
                     formContainer.classList.remove('hidden');
-                    alert('An error occurred. Please try again later.');
+                    errorMessage.textContent = 'An error occurred. Please try again later.';
+                    errorMessage.classList.remove('hidden');
                 }
             });
         });
@@ -267,6 +276,11 @@
             document.getElementById('success-message').classList.add('hidden');
             document.getElementById('loading-state').classList.add('hidden');
             document.getElementById('form-container').classList.remove('hidden');
+            
+            // Clear any error messages
+            const errorMessage = document.getElementById('error-message');
+            errorMessage.classList.add('hidden');
+            errorMessage.textContent = '';
         }
     </script>
 </body>

@@ -55,6 +55,10 @@
     <div class="flex-grow flex items-center justify-center p-4">
         <div class="bg-white/5 backdrop-blur-lg p-4 md:p-8 rounded-xl border border-white/10 w-full max-w-md blue-glow">
             <h2 class="text-xl md:text-2xl font-bold text-center mb-6 md:mb-8 text-white">Login To Your Account</h2>
+            
+            <!-- Message Display Area -->
+            <div id="messageDisplay" class="mb-4 py-2 px-4 rounded-lg text-center text-white hidden"></div>
+            
             <form id="loginForm" class="space-y-4 md:space-y-6">
                 <!-- Username Input -->
                 <div>
@@ -67,8 +71,8 @@
                     />
                 </div>
 
-                <!-- Password Input -->
-                <div>
+                <!-- Password Input with Toggle -->
+                <div class="relative">
                     <input
                         type="password"
                         id="password"
@@ -76,6 +80,13 @@
                         placeholder="Password"
                         required
                     />
+                    <button 
+                        type="button" 
+                        id="togglePassword" 
+                        class="absolute right-3 top-1/2 transform -translate-y-1/2 text-white/70 hover:text-white"
+                    >
+                        👁️
+                    </button>
                 </div>
 
                 <!-- Remember Me Checkbox -->
@@ -114,6 +125,30 @@
 
     <!-- JavaScript for Login Form -->
     <script>
+        function showMessage(message, isError = false) {
+            const messageDisplay = document.getElementById('messageDisplay');
+            messageDisplay.textContent = message;
+            messageDisplay.classList.remove('hidden', 'bg-green-500/20', 'bg-red-500/20');
+            
+            if (isError) {
+                messageDisplay.classList.add('bg-red-500/20');
+            } else {
+                messageDisplay.classList.add('bg-green-500/20');
+            }
+        }
+        
+        // Password toggle functionality
+        document.getElementById('togglePassword').addEventListener('click', function() {
+            const passwordInput = document.getElementById('password');
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                this.textContent = '🔒'; // Change to locked icon when password is visible
+            } else {
+                passwordInput.type = 'password';
+                this.textContent = '👁️'; // Change back to eye icon when password is hidden
+            }
+        });
+
         // Check if credentials are stored in localStorage
         const savedUsername = localStorage.getItem('rememberMeUsername');
         const savedPassword = localStorage.getItem('rememberMePassword');
@@ -158,15 +193,18 @@
                         localStorage.removeItem('rememberMePassword');
                     }
 
-                    // Redirect to the dashboard
-                    window.location.href = './Dashboard/dashboard.html';
+                    // Show success message and redirect to the dashboard
+                    showMessage('Login successful! Redirecting to dashboard...', false);
+                    setTimeout(() => {
+                        window.location.href = './Dashboard/dashboard.html';
+                    }, 1000); // Redirect after 1 second
                 } else {
                     // Display error message
-                    alert(data.error || 'Login failed. Please try again.');
+                    showMessage(data.error || 'Login failed. Please try again.', true);
                 }
             } catch (err) {
                 console.error('Error:', err);
-                alert('An error occurred. Please try again.');
+                showMessage('An error occurred. Please try again.', true);
             }
         });
     </script>
