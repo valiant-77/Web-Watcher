@@ -68,6 +68,12 @@ const matchResultSchema = new mongoose.Schema({
 });
 
 
+const scanCountSchema = new mongoose.Schema({
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    count: { type: Number, default: 0 },
+    lastReset: { type: Date, default: Date.now }
+});
+
 /******************************************************************************
  * Create Mongoose Models
  ******************************************************************************/
@@ -80,6 +86,9 @@ const Watchlist = mongoose.model('Watchlist', watchlistSchema);
 // Create the MatchResult model
 const MatchResult = mongoose.model('MatchResult', matchResultSchema);
 
+
+// Create the ScanCount model
+const ScanCount = mongoose.model('ScanCount', scanCountSchema);
 
 /******************************************************************************
  * Authentication Middleware
@@ -295,6 +304,31 @@ app.post('/api/scan', authenticate, async (req, res) => {
     try {
         const userId = req.user._id;
         
+        // Check scan limit
+        let scanCount = await ScanCount.findOne({ userId });
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        // If no scan record exists or it's from a previous day, create/reset it
+        if (!scanCount) {
+            scanCount = new ScanCount({ userId, count: 0, lastReset: new Date() });
+        } else if (scanCount.lastReset < today) {
+            // Reset count if it's a new day
+            scanCount.count = 0;
+            scanCount.lastReset = new Date();
+        }
+        
+        // Check if user has reached the daily limit
+        if (scanCount.count >= 4) {
+            return res.status(429).json({ 
+                error: 'Daily scan limit reached (4/day). Next scan available tomorrow.' 
+            });
+        }
+        
+        // Increment the count
+        scanCount.count += 1;
+        await scanCount.save();
+        
         // Find watchlist for the user
         const watchlist = await Watchlist.findOne({ userId });
         
@@ -307,7 +341,8 @@ app.post('/api/scan', authenticate, async (req, res) => {
         
         res.json({ 
             message: 'Scan completed', 
-            matches: results.filter(r => r.matchedKeywords.length > 0)
+            matches: results.filter(r => r.matchedKeywords.length > 0),
+            scansRemaining: 4 - scanCount.count
         });
     } catch (err) {
         console.error('Error during manual scan:', err);

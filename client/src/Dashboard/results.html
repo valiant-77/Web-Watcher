@@ -346,10 +346,30 @@
         </div>
     </div>
 
+    <!-- Information Notice -->
+ <div class="mt-6 bg-white/3 backdrop-blur-sm p-4 rounded-xl border border-white/5 flex flex-col items-center text-center max-w-2xl mx-auto">
+    <!-- Slightly More Visible Icon -->
+    <svg class="h-5 w-5 mb-2 opacity-75" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+        <defs>
+            <linearGradient id="infoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.6"/>
+                <stop offset="100%" stop-color="#60a5fa" stop-opacity="0.8"/>
+            </linearGradient>
+        </defs>
+        <circle cx="10" cy="10" r="9" fill="rgba(59, 130, 246, 0.08)" stroke="url(#infoGradient)" stroke-width="1"/>
+        <path d="M10 6a1 1 0 011 1v.01a1 1 0 11-2 0V7a1 1 0 011-1zm0 4a1 1 0 011 1v3a1 1 0 11-2 0v-3a1 1 0 011-1z" fill="url(#infoGradient)"/>
+    </svg>
+    
+    <!-- Notice Text - Centered and Subtle -->
+    <p class="text-xs text-gray-400">
+        <b>Note</b>: Once your keywords and URLs are saved, the website will automatically scrape the URLs and retrieve the results. Manual scanning is limited to four times per day.
+    </p>
+</div>
+
     <!-- Footer -->
-    <footer class="border-t border-white/10 py-8">
-        <div class="max-w-7xl mx-auto px-4 text-center text-gray-400">
-            <p>&copy; 2025 WebWatcher. All rights reserved.</p>
+    <footer class="border-t border-white/10 py-3 md:py-6 mt-auto">
+        <div class="max-w-6xl mx-auto px-4 text-center text-gray-400">
+            <p class="text-sm">&copy; 2025 WebWatcher. All rights reserved.</p>
         </div>
     </footer>
 
@@ -663,6 +683,13 @@
                     }
                 })
                 .then(response => {
+                    // Check for rate limit status specifically
+                    if (response.status === 429) {
+                        return response.json().then(data => {
+                            throw new Error(data.error || 'Daily scan limit reached. Try again tomorrow.');
+                        });
+                    }
+                    
                     if (!response.ok) {
                         throw new Error('Scan failed');
                     }
@@ -674,15 +701,20 @@
                     scanNowButton.textContent = 'Scan Now';
                     scanNowButton.disabled = false;
                     
-                    // Show success message instead of alert
-                    showMessage(`Scan completed. Found ${data.matches.length} matches.`);
+                    // Show remaining scans in message if available
+                    const message = data.scansRemaining !== undefined ? 
+                        `Scan completed. Found ${data.matches.length} matches. (${data.scansRemaining} scans remaining today)` :
+                        `Scan completed. Found ${data.matches.length} matches.`;
+                        
+                    showMessage(message);
                 })
                 .catch(error => {
                     console.error('Error:', error);
                     scanNowButton.textContent = 'Scan Now';
                     scanNowButton.disabled = false;
-                    // Show error message instead of alert
-                    showMessage('Scan failed. Please try again later.', true);
+                    
+                    // Show specific error message
+                    showMessage(error.message || 'Scan failed. Please try again later.', true);
                 });
             }
 
