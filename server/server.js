@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const path = require('path');
 const jwt = require('jsonwebtoken');
@@ -8,10 +9,9 @@ const cheerio = require('cheerio');
 const cron = require('node-cron');
 const nodemailer = require('nodemailer');
 const app = express();
-require('dotenv').config();
 const PORT = process.env.PORT || 3000;
 
-
+let lastEmailSent = null;
 /******************************************************************************
  * Serve static files (your frontend HTML, CSS, JS)
  ******************************************************************************/
@@ -200,14 +200,14 @@ app.get('/api/user', authenticate, async (req, res) => {
 /****************Route to save watchlist data***********************/
 app.post('/api/watchlist', authenticate, async (req, res) => {
     try {
-        const { keywords, urls, email } = req.body;
+        const { keywords, urls, email, removeEmail } = req.body;
         const userId = req.user._id;
 
         if (!keywords || !urls) {
             return res.status(400).json({ error: 'Keywords and URLs are required' });
         }
 
-        // NEW: Validate maximum items limit
+        // Validate maximum items limit
         const keywordArray = keywords.split(',');
         const urlArray = urls.split('\n');
 
@@ -219,8 +219,8 @@ app.post('/api/watchlist', authenticate, async (req, res) => {
             return res.status(400).json({ error: 'Maximum 10 URLs allowed' });
         }
 
-        // Validate email if provided
-        if (email && !validateEmail(email)) {
+        // Validate email if provided and not being removed
+        if (email && !removeEmail && !validateEmail(email)) {
             return res.status(400).json({ error: 'Invalid email address format' });
         }
 
@@ -231,7 +231,15 @@ app.post('/api/watchlist', authenticate, async (req, res) => {
             // Update existing watchlist
             watchlist.keywords = keywords;
             watchlist.urls = urls;
-            watchlist.email = email || watchlist.email; // Update email if provided
+            
+            // Handle email updates
+            if (removeEmail || email === '') {
+                watchlist.email = null; 
+            } else if (email) {
+                watchlist.email = email; 
+            }
+           
+            
             watchlist.updatedAt = Date.now();
             await watchlist.save();
         } else {
@@ -240,15 +248,22 @@ app.post('/api/watchlist', authenticate, async (req, res) => {
                 userId,
                 keywords,
                 urls,
-                email // Save email if provided
+                email: removeEmail ? null : email 
             });
             await watchlist.save();
+        }
+
+        let emailStatus = null;
+        if (removeEmail || email === '') {
+            emailStatus = 'Email notifications disabled';
+        } else if (email) {
+            emailStatus = 'Email saved successfully';
         }
 
         res.status(200).json({ 
             message: 'Saved successfully',
             watchlist,
-            emailStatus: email ? 'Email saved successfully' : 'No email provided'
+            emailStatus
         });
     } catch (err) {
         console.error('Error saving watchlist:', err);
@@ -350,7 +365,29 @@ app.post('/api/scan', authenticate, async (req, res) => {
     }
 });
 
-
+/************Route to Check if email was sent**************/
+app.get('/api/email-status', authenticate, async (req, res) => {
+    if (lastEmailSent) {
+        const isRecent = (Date.now() - lastEmailSent.timestamp) < 3600000;
+        
+        if (isRecent) {
+            // Store the response
+            const response = {
+                emailSent: true,
+                timestamp: lastEmailSent.timestamp,
+                recipient: lastEmailSent.email.split('@')[0] + '@***'
+            };
+            
+            // Clear the variable
+            lastEmailSent = null;
+            
+            // Send the response
+            return res.json(response);
+        }
+    }
+    
+    res.json({ emailSent: false });
+});
 
 /****************Route to delete a match result***********************/
 app.delete('/api/matches/:id', authenticate, async (req, res) => {
@@ -557,15 +594,25 @@ async function sendEmailNotification(email, url, keywords) {
             <p>We found keywords you're watching on a website:</p>
             <p><strong>URL:</strong> <a href="${url}">${url}</a></p>
             <p><strong>Keywords Found:</strong> ${keywords.join(', ')}</p>
-            <p>Log in to your WebWatcher account to see more details.</p>
         `
     };
     
     try {
         await transporter.sendMail(mailOptions);
         console.log(`Notification email sent to ${email}`);
+        
+        // Store email sent info
+        lastEmailSent = {
+            timestamp: Date.now(),
+            email: email,
+            url: url,
+            keywords: keywords
+        };
+        
+        return true;
     } catch (error) {
         console.error('Error sending email notification:', error);
+        return false;
     }
 }
 

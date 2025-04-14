@@ -364,6 +364,7 @@
     <p class="text-xs text-gray-400">
         <b>Note</b>: Once your keywords and URLs are saved, the website will automatically scrape the URLs and retrieve the results. Manual scanning is limited to four times per day.
     </p>
+    <p class="text-xs text-gray-400">-Please Check your spam folder for the email notification</p>
 </div>
 
     <!-- Footer -->
@@ -459,32 +460,52 @@
                 }
             });
 
-            // Function to show message - Added this
-            function showMessage(message, isError = false) {
-                // Clear any existing messages
-                const container = document.getElementById('messageContainer');
-                container.innerHTML = '';
-                
-                // Create message element
-                const msgElement = document.createElement('div');
-                msgElement.className = `message ${isError ? 'error-message' : 'success-message'}`;
-                msgElement.textContent = message;
-                
-                // Add to container
-                container.appendChild(msgElement);
-                
-                // Scroll to make sure message is visible
-                window.scrollTo({
-                    top: 0,
-                    behavior: 'smooth'
-                });
-                
-                // Remove after 5 seconds
+            // Function to show message - Modified to accept a delay parameter
+            function showMessage(message, isError = false, delay = 0) {
                 setTimeout(() => {
-                    if (container.contains(msgElement)) {
-                        container.removeChild(msgElement);
+                    // Clear any existing messages
+                    const container = document.getElementById('messageContainer');
+                    container.innerHTML = '';
+                    
+                    // Create message element
+                    const msgElement = document.createElement('div');
+                    msgElement.className = `message ${isError ? 'error-message' : 'success-message'}`;
+                    msgElement.textContent = message;
+                    
+                    // Add to container
+                    container.appendChild(msgElement);
+                    
+                    // Scroll to make sure message is visible
+                    window.scrollTo({
+                        top: 0,
+                        behavior: 'smooth'
+                    });
+                    
+                    // Remove after 5 seconds
+                    setTimeout(() => {
+                        if (container.contains(msgElement)) {
+                            container.removeChild(msgElement);
+                        }
+                    }, 5000);
+                }, delay);
+            }
+
+            // Modified function to check email status with delay
+            function checkEmailStatus() {
+                fetch('/api/email-status', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
                     }
-                }, 5000);
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.emailSent) {
+                        // Add a 3-second delay before showing the email notification
+                        // This ensures it appears after the scan results message
+                        showMessage(`Email notification sent`, false, 3000);
+                    }
+                })
+                .catch(error => console.error('Error checking email status:', error));
             }
 
             // Fetch match results from the API
@@ -518,6 +539,9 @@
                     
                     // Display results
                     displayResults(data);
+                    
+                    // NEW: Check if any emails were sent (this will now use the delayed notification)
+                    checkEmailStatus();
                 })
                 .catch(error => {
                     console.error('Error:', error);
@@ -641,8 +665,7 @@
                         showEmptyState();
                     }
                     
-                    // Show success message instead of alert
-                    showMessage('Result successfully deleted');
+                   
                 })
                 .catch(error => {
                     console.error('Error:', error);
@@ -701,12 +724,14 @@
                     scanNowButton.textContent = 'Scan Now';
                     scanNowButton.disabled = false;
                     
-                    // Show remaining scans in message if available
+                    // Show remaining scans in message immediately
                     const message = data.scansRemaining !== undefined ? 
                         `Scan completed. Found ${data.matches.length} matches. (${data.scansRemaining} scans remaining today)` :
                         `Scan completed. Found ${data.matches.length} matches.`;
                         
                     showMessage(message);
+                    
+                    // Email status check will be delayed by the checkEmailStatus function
                 })
                 .catch(error => {
                     console.error('Error:', error);

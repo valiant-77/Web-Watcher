@@ -623,58 +623,63 @@
     });
 
     document.getElementById('saveButton').addEventListener('click', async () => {
-        if (keywords.length === 0 || urls.length === 0) {
-            showMessage('Please add at least one keyword and one URL.', true);
+    if (keywords.length === 0 || urls.length === 0) {
+        showMessage('Please add at least one keyword and one URL.', true);
+        return;
+    }
+
+    const email = document.getElementById('emailInput').value.trim();
+    
+    // Validate email if present (not empty)
+    if (email && !validateEmail(email)) {
+        showMessage('Please enter a valid email address.', true);
+        return;
+    }
+
+    try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = '../login.html';
             return;
         }
 
-        const email = document.getElementById('emailInput').value.trim();
+        const response = await fetch('/api/watchlist', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({ 
+                keywords: keywords.join(','), 
+                urls: urls.join('\n'),
+                email: email, // This will be an empty string when removed
+                removeEmail: email === '' // Add this flag to explicitly indicate email removal
+            }),
+        });
 
-        // Validate email (optional)
-        if (email && !validateEmail(email)) {
-            showMessage('Please enter a valid email address.', true);
-            return;
-        }
+        const data = await response.json();
 
-        try {
-            const token = localStorage.getItem('token');
-            if (!token) {
-                window.location.href = '../login.html';
-                return;
+        if (response.ok) {
+            showMessage('Saved successfully!');
+            
+            // Show email-specific message
+            if (email === '') {
+                setTimeout(() => {
+                    showMessage('Email notifications disabled');
+                }, 1000);
+            } else if (data.emailStatus) {
+                setTimeout(() => {
+                    showMessage(data.emailStatus);
+                }, 1000);
             }
-
-            const response = await fetch('/api/watchlist', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`,
-                },
-                body: JSON.stringify({ 
-                    keywords: keywords.join(','), 
-                    urls: urls.join('\n'),
-                    email: email // Include email in the request
-                }),
-            });
-
-            const data = await response.json();
-
-            if (response.ok) {
-                showMessage('Saved successfully!');
-                
-                // Show email-specific success message if available
-                if (data.emailStatus) {
-                    setTimeout(() => {
-                        showMessage(data.emailStatus);
-                    }, 1000);
-                }
-            } else {
-                showMessage(data.error || 'Failed to save. Please try again.', true);
-            }
-        } catch (err) {
-            console.error('Error:', err);
-            showMessage('An error occurred. Please try again.', true);
+        } else {
+            showMessage(data.error || 'Failed to save. Please try again.', true);
         }
-    });
+    } catch (err) {
+        console.error('Error:', err);
+        showMessage('An error occurred. Please try again.', true);
+    }
+});
 
     // Initialize displays and load existing data
     document.addEventListener('DOMContentLoaded', () => {
