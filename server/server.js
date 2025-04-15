@@ -457,6 +457,71 @@ app.post('/api/feedback', async (req, res) => {
     }
 });
 
+
+// Updated server-side route to handle keyword deletion with better edge case handling
+app.delete('/api/watchlist/keyword', authenticate, async (req, res) => {
+    try {
+        const { keyword } = req.body;
+        const userId = req.user._id;
+        
+        // Find the user's watchlist
+        const watchlist = await Watchlist.findOne({ userId });
+        
+        if (!watchlist) {
+            return res.status(404).json({ error: 'Watchlist not found' });
+        }
+        
+        // Get current keywords and remove the specified one
+        const currentKeywords = watchlist.keywords.split(',').map(k => k.trim());
+        const updatedKeywords = currentKeywords.filter(k => k !== keyword && k !== '');
+        
+        // Make sure we have at least one placeholder if all keywords are removed
+        watchlist.keywords = updatedKeywords.length > 0 ? updatedKeywords.join(',') : 'placeholder';
+        watchlist.updatedAt = Date.now();
+        await watchlist.save();
+        
+        res.status(200).json({ 
+            message: 'Keyword deleted successfully',
+            watchlist
+        });
+    } catch (err) {
+        console.error('Error deleting keyword:', err);
+        res.status(500).json({ error: 'Failed to delete keyword' });
+    }
+});
+
+// Updated server-side route to handle URL deletion with better edge case handling
+app.delete('/api/watchlist/url', authenticate, async (req, res) => {
+    try {
+        const { url } = req.body;
+        const userId = req.user._id;
+        
+        // Find the user's watchlist
+        const watchlist = await Watchlist.findOne({ userId });
+        
+        if (!watchlist) {
+            return res.status(404).json({ error: 'Watchlist not found' });
+        }
+        
+        // Get current URLs and remove the specified one
+        const currentUrls = watchlist.urls.split('\n').map(u => u.trim());
+        const updatedUrls = currentUrls.filter(u => u !== url && u !== '');
+        
+        // Make sure we have at least one placeholder if all urls are removed
+        watchlist.urls = updatedUrls.length > 0 ? updatedUrls.join('\n') : 'placeholder';
+        watchlist.updatedAt = Date.now();
+        await watchlist.save();
+        
+        res.status(200).json({ 
+            message: 'URL deleted successfully',
+            watchlist
+        });
+    } catch (err) {
+        console.error('Error deleting URL:', err);
+        res.status(500).json({ error: 'Failed to delete URL' });
+    }
+});
+
 /******************************************************************************
  * Web Scraping Functionality
  ******************************************************************************/

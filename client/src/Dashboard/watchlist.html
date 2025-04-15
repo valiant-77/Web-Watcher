@@ -481,90 +481,188 @@
 
     // Function to update the keywords display
     function updateKeywordDisplay() {
-        const container = document.getElementById('keywordContainer');
-        const emptyMessage = document.getElementById('emptyKeywords');
-        
-        //  counter
-        document.getElementById('keywordCounter').textContent = `${keywords.length}/10`;
-        
-        // Show/hide empty message
-        if (keywords.length === 0) {
-            emptyMessage.style.display = 'block';
-            container.querySelectorAll('.keyword-pill').forEach(pill => pill.remove());
-            return;
-        } else {
-            emptyMessage.style.display = 'none';
-        }
-        
-        // Clear and rebuild pills
+    const container = document.getElementById('keywordContainer');
+    const emptyMessage = document.getElementById('emptyKeywords');
+    
+    // Filter out any empty strings that might have slipped in
+    keywords = keywords.filter(k => k.trim() !== '' && k.trim() !== 'placeholder');
+    
+    // Update counter
+    document.getElementById('keywordCounter').textContent = `${keywords.length}/10`;
+    
+    // Show/hide empty message
+    if (keywords.length === 0) {
+        emptyMessage.style.display = 'block';
         container.querySelectorAll('.keyword-pill').forEach(pill => pill.remove());
-        
-        keywords.forEach((keyword, index) => {
-            const pill = document.createElement('div');
-            pill.className = 'keyword-pill';
-            pill.innerHTML = `
-                <span>${keyword}</span>
-                <span class="keyword-x" data-index="${index}">×</span>
-            `;
-            container.appendChild(pill);
-        });
-        
-        // hidden input for form submission
-        document.getElementById('keywordsHidden').value = keywords.join(',');
-        
-        // click handlers for remove buttons
-        container.querySelectorAll('.keyword-x').forEach(button => {
-            button.addEventListener('click', function() {
-                const index = parseInt(this.getAttribute('data-index'));
-                keywords = keywords.filter((_, i) => i !== index);
-                updateKeywordDisplay();
-            });
-        });
+        document.getElementById('keywordsHidden').value = '';
+        return;
+    } else {
+        emptyMessage.style.display = 'none';
     }
+    
+    // Clear and rebuild pills
+    container.querySelectorAll('.keyword-pill').forEach(pill => pill.remove());
+    
+    keywords.forEach((keyword, index) => {
+        const pill = document.createElement('div');
+        pill.className = 'keyword-pill';
+        pill.innerHTML = `
+            <span>${keyword}</span>
+            <span class="keyword-x" data-index="${index}" data-keyword="${keyword}">×</span>
+        `;
+        container.appendChild(pill);
+    });
+    
+    // Update hidden input for form submission
+    document.getElementById('keywordsHidden').value = keywords.join(',');
+    
+    // Add click handlers for remove buttons
+    container.querySelectorAll('.keyword-x').forEach(button => {
+        button.addEventListener('click', async function() {
+            const index = parseInt(this.getAttribute('data-index'));
+            const keyword = this.getAttribute('data-keyword');
+            
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    window.location.href = '../login.html';
+                    return;
+                }
+                
+                // Show loading state (optional)
+                this.textContent = '...';
+                this.style.pointerEvents = 'none';
+                
+                console.log(`Deleting keyword: "${keyword}" at index ${index}`);
+                
+                // Send delete request to the server
+                const response = await fetch('/api/watchlist/keyword', {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({ keyword }),
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    console.log('Server response:', data);
+                    // Remove from local array and update display
+                    keywords = keywords.filter((_, i) => i !== index);
+                    updateKeywordDisplay();
+                    showMessage('Keyword deleted successfully');
+                } else {
+                    console.error('Server error response:', data);
+                    showMessage(data.error || 'Failed to delete keyword', true);
+                    // Reset the button state
+                    this.textContent = '×';
+                    this.style.pointerEvents = 'auto';
+                }
+            } catch (err) {
+                console.error('Error deleting keyword:', err);
+                showMessage('An error occurred while deleting the keyword', true);
+                // Reset the button state
+                this.textContent = '×';
+                this.style.pointerEvents = 'auto';
+            }
+        });
+    });
+}
 
     // Function to update the URLs display
     function updateUrlDisplay() {
-        const container = document.getElementById('urlContainer');
-        const emptyMessage = document.getElementById('emptyUrls');
-        
-        // Update counter
-        document.getElementById('urlCounter').textContent = `${urls.length}/10`;
-        
-        // Show/hide empty message
-        if (urls.length === 0) {
-            emptyMessage.style.display = 'block';
-            container.querySelectorAll('.url-item').forEach(item => item.remove());
-            return;
-        } else {
-            emptyMessage.style.display = 'none';
-        }
-        
-        // Clear and rebuild items
+    const container = document.getElementById('urlContainer');
+    const emptyMessage = document.getElementById('emptyUrls');
+    
+    // Filter out any empty strings that might have slipped in
+    urls = urls.filter(u => u.trim() !== '' && u.trim() !== 'placeholder');
+    
+    // Update counter
+    document.getElementById('urlCounter').textContent = `${urls.length}/10`;
+    
+    // Show/hide empty message
+    if (urls.length === 0) {
+        emptyMessage.style.display = 'block';
         container.querySelectorAll('.url-item').forEach(item => item.remove());
-        
-        urls.forEach((url, index) => {
-            const urlItem = document.createElement('div');
-            urlItem.className = 'url-item';
-            urlItem.innerHTML = `
-                <span class="url-number">${index + 1}</span>
-                <span class="url-text">${url}</span>
-                <span class="keyword-x ml-auto" data-index="${index}">×</span>
-            `;
-            container.appendChild(urlItem);
-        });
-        
-        // Update hidden input for form submission
-        document.getElementById('urlsHidden').value = urls.join('\n');
-        
-        // Add click handlers for remove buttons
-        container.querySelectorAll('.url-item .keyword-x').forEach(button => {
-            button.addEventListener('click', function() {
-                const index = parseInt(this.getAttribute('data-index'));
-                urls = urls.filter((_, i) => i !== index);
-                updateUrlDisplay();
-            });
-        });
+        document.getElementById('urlsHidden').value = '';
+        return;
+    } else {
+        emptyMessage.style.display = 'none';
     }
+    
+    // Clear and rebuild items
+    container.querySelectorAll('.url-item').forEach(item => item.remove());
+    
+    urls.forEach((url, index) => {
+        const urlItem = document.createElement('div');
+        urlItem.className = 'url-item';
+        urlItem.innerHTML = `
+            <span class="url-number">${index + 1}</span>
+            <span class="url-text">${url}</span>
+            <span class="keyword-x ml-auto" data-index="${index}" data-url="${url}">×</span>
+        `;
+        container.appendChild(urlItem);
+    });
+    
+    // Update hidden input for form submission
+    document.getElementById('urlsHidden').value = urls.join('\n');
+    
+    // Add click handlers for remove buttons
+    container.querySelectorAll('.url-item .keyword-x').forEach(button => {
+        button.addEventListener('click', async function() {
+            const index = parseInt(this.getAttribute('data-index'));
+            const url = this.getAttribute('data-url');
+            
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    window.location.href = '../login.html';
+                    return;
+                }
+                
+                // Show loading state (optional)
+                this.textContent = '...';
+                this.style.pointerEvents = 'none';
+                
+                console.log(`Deleting URL: "${url}" at index ${index}`);
+                
+                // Send delete request to the server
+                const response = await fetch('/api/watchlist/url', {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({ url }),
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    console.log('Server response:', data);
+                    // Remove from local array and update display
+                    urls = urls.filter((_, i) => i !== index);
+                    updateUrlDisplay();
+                    showMessage('URL deleted successfully');
+                } else {
+                    console.error('Server error response:', data);
+                    showMessage(data.error || 'Failed to delete URL', true);
+                    // Reset the button state
+                    this.textContent = '×';
+                    this.style.pointerEvents = 'auto';
+                }
+            } catch (err) {
+                console.error('Error deleting URL:', err);
+                showMessage('An error occurred while deleting the URL', true);
+                // Reset the button state
+                this.textContent = '×';
+                this.style.pointerEvents = 'auto';
+            }
+        });
+    });
+}
 
     // Add event listener for keyword input
     document.getElementById('keywordInput').addEventListener('keydown', function(e) {

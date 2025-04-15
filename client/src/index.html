@@ -45,35 +45,39 @@
         </p>
         
         <div class="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center"> 
-            <a href="#demo-video" 
-               class="flex items-center justify-center px-6 sm:px-8 py-3 sm:py-4 rounded-full 
-                     bg-white/10 hover:bg-white/20 transition-colors 
-                     text-base sm:text-lg font-medium group">
-                <svg class="w-6 h-6 sm:w-8 sm:h-8 mr-2 sm:mr-3 group-hover:text-blue-500 transition-colors" 
-                     fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <a href="#" 
+            id="watch-demo-button"
+            class="flex items-center justify-center px-6 sm:px-8 py-3 sm:py-4 rounded-full 
+                    bg-white/10 hover:bg-white/20 transition-colors 
+                    text-base sm:text-lg font-medium group">
+                <svg class="w-6 h-6 sm:w-7 sm:h-7 mr-2 sm:mr-3 group-hover:text-blue-500 transition-colors" 
+                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                          d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                        d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                          d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
                 Watch Demo
             </a>
-        </div>
-        
-        <!-- Video Modal -->
-        <div id="demo-video" class="hidden fixed inset-0 bg-black/80 z-50">
-            <div class="max-w-4xl mx-auto my-10 px-4">
-                <video controls class="w-full rounded-lg shadow-2xl">
-                    <source src="your-video.mp4" type="video/mp4">
-                    Your browser does not support the video tag.
-                </video>
-                <button onclick="document.getElementById('demo-video').classList.add('hidden')"
-                        class="absolute top-4 right-4 text-white text-3xl hover:text-red-500 transition-colors">
-                    &times;
-                </button>
+
+            <!-- Redesigned Minimal Video Modal -->
+            <div id="video-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm transition-opacity duration-300">
+                <div class="relative w-full max-w-4xl rounded-lg overflow-hidden shadow-2xl">
+                    <!-- Close button positioned on top right -->
+                    <button id="close-modal" class="absolute top-3 right-3 z-10 p-1 rounded-full bg-black/50 hover:bg-black/70 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                    
+                    <!-- Video with clean styling -->
+                    <video id="demo-video" controls class="w-full rounded-lg bg-black">
+                        <source src="./Video/Demo.mp4" type="video/mp4">
+                        Your browser does not support the video tag.
+                    </video>
+                </div>
             </div>
-        </div>
-    </div>
+     </div>
 </section>
 
     <!-- Features -->
@@ -212,7 +216,45 @@
             const loadingState = document.getElementById('loading-state');
             const successMessage = document.getElementById('success-message');
             const errorMessage = document.getElementById('error-message');
+            const watchButton = document.getElementById('watch-demo-button');
+            const videoModal = document.getElementById('video-modal');
+            const closeButton = document.getElementById('close-modal');
+            const video = document.getElementById('demo-video');
             
+
+            watchButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            videoModal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden'; // Prevent scrolling while modal is open
+        });
+        
+        // Close modal on button click
+        closeButton.addEventListener('click', function() {
+            closeModal();
+        });
+        
+        // Close modal when clicking outside the video
+        videoModal.addEventListener('click', function(e) {
+            if (e.target === videoModal) {
+                closeModal();
+            }
+        });
+        
+        // Close modal on ESC key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && !videoModal.classList.contains('hidden')) {
+                closeModal();
+            }
+        });
+        
+        function closeModal() {
+            videoModal.classList.add('hidden');
+            document.body.style.overflow = ''; // Restore scrolling
+            video.pause(); // Pause video when modal is closed
+        }
+    
+
+
             feedbackForm.addEventListener('submit', async function(event) {
                 event.preventDefault();
                 
