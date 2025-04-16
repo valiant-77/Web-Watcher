@@ -23,7 +23,7 @@ app.use(express.static(path.join(__dirname, '../client/src')));
  * Connect to MongoDB
  ******************************************************************************/
 // MongoDB connection
-const MONGODB_URI = process.env.MONGODB_URI;
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27018/';
 mongoose.connect(MONGODB_URI)
 .then(() => console.log('Connected to MongoDB'))
 .catch((err) => console.error('Failed to connect to MongoDB:', err));
@@ -573,6 +573,8 @@ async function processWatchlist(watchlist) {
     console.log(`Keywords: ${keywordList.join(', ')}`);
     
     const results = [];
+    // Create an array to collect all matches for the email
+    const allMatches = [];
     
     for (const url of urlList) {
         try {
@@ -603,10 +605,11 @@ async function processWatchlist(watchlist) {
                     matchedKeywords: matches
                 });
                 
-                // Send email notification if email is provided
-                if (watchlist.email) {
-                    await sendEmailNotification(watchlist.email, processedUrl, matches);
-                }
+                // Add to our collection of matches for the email
+                allMatches.push({
+                    url: processedUrl,
+                    keywords: matches
+                });
             }
         } catch (error) {
             console.error(`Error scanning URL ${url}:`, error.message);
@@ -616,6 +619,11 @@ async function processWatchlist(watchlist) {
                 matchedKeywords: []
             });
         }
+    }
+    
+    // Send a single email with all matches if we have any and an email is provided
+    if (allMatches.length > 0 && watchlist.email) {
+        await sendConsolidatedEmailNotification(watchlist.email, allMatches);
     }
     
     return results;
@@ -649,34 +657,60 @@ async function scanUrlForKeywords(url, keywords) {
 }
 
 // Send email notification when keywords are found
-async function sendEmailNotification(email, url, keywords) {
+async function sendConsolidatedEmailNotification(email, matches) {
+    // Create HTML content for all matches
+    let matchesHtml = '';
+    
+    matches.forEach(match => {
+        matchesHtml += `
+<div style="margin-bottom: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 5px; background-color: #f9f9f9;">
+<div><strong>URL:</strong> <a href="${match.url}" style="color: #3b82f6; text-decoration: underline;">${match.url}</a></div>
+<div style="margin-top: 8px;"><strong>Keywords Found:</strong> ${match.keywords.join(', ')}</div>
+</div>`;
+    });
+    
     const mailOptions = {
         from: process.env.EMAIL_USER,
         to: email,
-        subject: 'WebWatcher Alert: Keywords Found',
-        html: `
-            <h2>WebWatcher Alert</h2>
-            <p>We found keywords you're watching on a website:</p>
-            <p><strong>URL:</strong> <a href="${url}">${url}</a></p>
-            <p><strong>Keywords Found:</strong> ${keywords.join(', ')}</p>
-        `
+        subject: `WebWatcher Alert: Keywords Found`,
+        // Set these headers to prevent content from being treated as quoted text
+        headers: {
+            'Content-Type': 'text/html; charset=UTF-8',
+            'Content-Transfer-Encoding': 'quoted-printable',
+            'X-Entity-Ref-ID': Date.now().toString() // Unique ID for the email
+        },
+        html: `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WebWatcher Alert</title>
+</head>
+<body style="font-family: Arial, sans-serif; margin: 0; padding: 0;">
+<div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+<h2 style="color: #3b82f6; border-bottom: 2px solid #3b82f6; padding-bottom: 10px; margin-top: 0;">WebWatcher Alert</h2>
+<p>We found keywords you're watching on the following websites:</p>
+${matchesHtml}
+<p style="margin-top: 20px; font-size: 14px; color: #666;">You're receiving this email because you've set up keyword monitoring on WebWatcher.</p>
+</div>
+</body>
+</html>`
     };
     
     try {
         await transporter.sendMail(mailOptions);
-        console.log(`Notification email sent to ${email}`);
+        console.log(`Consolidated notification email sent to ${email} with ${matches.length} matches`);
         
         // Store email sent info
         lastEmailSent = {
             timestamp: Date.now(),
             email: email,
-            url: url,
-            keywords: keywords
+            matchCount: matches.length
         };
         
         return true;
     } catch (error) {
-        console.error('Error sending email notification:', error);
+        console.error('Error sending consolidated email notification:', error);
         return false;
     }
 }
