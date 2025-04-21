@@ -365,6 +365,40 @@ app.post('/api/scan', authenticate, async (req, res) => {
     }
 });
 
+/************Route to trigger from UpTimeRobot**************/
+app.get('/api/trigger-scan', async (req, res) => {
+    // Secure the endpoint with a secret token
+    const providedToken = req.query.token;
+    const secretToken = process.env.CRON_SECRET_TOKEN; 
+    
+    // Basic security check
+    if (!secretToken || providedToken !== secretToken) {
+        console.log('Unauthorized scan attempt');
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+    
+    console.log('Externally triggered scanning task:', new Date().toISOString());
+    
+    try {
+        // Call your existing function to scan all watchlists
+        const results = await scrapeAllWatchlists();
+        
+        // Return success response
+        res.json({ 
+            success: true, 
+            message: 'Scan triggered successfully', 
+            timestamp: new Date().toISOString(),
+            matchCount: results.filter(r => r && r.matchedKeywords && r.matchedKeywords.length > 0).length
+        });
+    } catch (error) {
+        console.error('Error in triggered scraping:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Failed to complete scan' 
+        });
+    }
+});
+
 /************Route to Check if email was sent**************/
 app.get('/api/email-status', authenticate, async (req, res) => {
     if (lastEmailSent) {
