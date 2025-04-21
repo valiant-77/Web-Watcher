@@ -522,44 +522,55 @@
             const index = parseInt(this.getAttribute('data-index'));
             const keyword = this.getAttribute('data-keyword');
             
+            // Check if we already have a saved watchlist
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = '../login.html';
+                return;
+            }
+            
+            // Show loading state
+            this.textContent = '...';
+            this.style.pointerEvents = 'none';
+            
             try {
-                const token = localStorage.getItem('token');
-                if (!token) {
-                    window.location.href = '../login.html';
-                    return;
-                }
-                
-                // Show loading state (optional)
-                this.textContent = '...';
-                this.style.pointerEvents = 'none';
-                
-                console.log(`Deleting keyword: "${keyword}" at index ${index}`);
-                
-                // Send delete request to the server
-                const response = await fetch('/api/watchlist/keyword', {
-                    method: 'DELETE',
+                // Check if we need server-side deletion
+                const checkResponse = await fetch('/api/watchlist', {
+                    method: 'GET',
                     headers: {
-                        'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}`,
-                    },
-                    body: JSON.stringify({ keyword }),
+                    }
                 });
                 
-                const data = await response.json();
+                const watchlistData = await checkResponse.json();
                 
-                if (response.ok) {
-                    console.log('Server response:', data);
-                    // Remove from local array and update display
-                    keywords = keywords.filter((_, i) => i !== index);
-                    updateKeywordDisplay();
-                    showMessage('Keyword deleted successfully');
-                } else {
-                    console.error('Server error response:', data);
-                    showMessage(data.error || 'Failed to delete keyword', true);
-                    // Reset the button state
-                    this.textContent = '×';
-                    this.style.pointerEvents = 'auto';
+                if (checkResponse.ok && watchlistData && watchlistData._id) {
+                    // Watchlist exists on server, make delete request
+                    const response = await fetch('/api/watchlist/keyword', {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`,
+                        },
+                        body: JSON.stringify({ keyword }),
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (!response.ok) {
+                        console.error('Server error response:', data);
+                        showMessage(data.error || 'Failed to delete keyword', true);
+                        // Reset the button state
+                        this.textContent = '×';
+                        this.style.pointerEvents = 'auto';
+                        return;
+                    }
                 }
+                
+                // Always update local state
+                keywords = keywords.filter((_, i) => i !== index);
+                updateKeywordDisplay();
+                showMessage('Keyword deleted successfully');
             } catch (err) {
                 console.error('Error deleting keyword:', err);
                 showMessage('An error occurred while deleting the keyword', true);
@@ -615,44 +626,55 @@
             const index = parseInt(this.getAttribute('data-index'));
             const url = this.getAttribute('data-url');
             
+            // Check if we already have a saved watchlist
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = '../login.html';
+                return;
+            }
+            
+            // Show loading state
+            this.textContent = '...';
+            this.style.pointerEvents = 'none';
+            
             try {
-                const token = localStorage.getItem('token');
-                if (!token) {
-                    window.location.href = '../login.html';
-                    return;
-                }
-                
-                // Show loading state (optional)
-                this.textContent = '...';
-                this.style.pointerEvents = 'none';
-                
-                console.log(`Deleting URL: "${url}" at index ${index}`);
-                
-                // Send delete request to the server
-                const response = await fetch('/api/watchlist/url', {
-                    method: 'DELETE',
+                // Check if we need server-side deletion
+                const checkResponse = await fetch('/api/watchlist', {
+                    method: 'GET',
                     headers: {
-                        'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}`,
-                    },
-                    body: JSON.stringify({ url }),
+                    }
                 });
                 
-                const data = await response.json();
+                const watchlistData = await checkResponse.json();
                 
-                if (response.ok) {
-                    console.log('Server response:', data);
-                    // Remove from local array and update display
-                    urls = urls.filter((_, i) => i !== index);
-                    updateUrlDisplay();
-                    showMessage('URL deleted successfully');
-                } else {
-                    console.error('Server error response:', data);
-                    showMessage(data.error || 'Failed to delete URL', true);
-                    // Reset the button state
-                    this.textContent = '×';
-                    this.style.pointerEvents = 'auto';
+                if (checkResponse.ok && watchlistData && watchlistData._id) {
+                    // Watchlist exists on server, make delete request
+                    const response = await fetch('/api/watchlist/url', {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`,
+                        },
+                        body: JSON.stringify({ url }),
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (!response.ok) {
+                        console.error('Server error response:', data);
+                        showMessage(data.error || 'Failed to delete URL', true);
+                        // Reset the button state
+                        this.textContent = '×';
+                        this.style.pointerEvents = 'auto';
+                        return;
+                    }
                 }
+                
+                // Always update local state
+                urls = urls.filter((_, i) => i !== index);
+                updateUrlDisplay();
+                showMessage('URL deleted successfully');
             } catch (err) {
                 console.error('Error deleting URL:', err);
                 showMessage('An error occurred while deleting the URL', true);
