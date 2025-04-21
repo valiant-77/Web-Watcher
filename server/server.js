@@ -383,12 +383,17 @@ app.get('/api/trigger-scan', async (req, res) => {
         // Call your existing function to scan all watchlists
         const results = await scrapeAllWatchlists();
         
+        // Make sure results is an array before filtering
+        const matchCount = Array.isArray(results) 
+            ? results.filter(r => r && r.matchedKeywords && r.matchedKeywords.length > 0).length
+            : 0;
+        
         // Return success response
         res.json({ 
             success: true, 
             message: 'Scan triggered successfully', 
             timestamp: new Date().toISOString(),
-            matchCount: results.filter(r => r && r.matchedKeywords && r.matchedKeywords.length > 0).length
+            matchCount: matchCount
         });
     } catch (error) {
         console.error('Error in triggered scraping:', error);
@@ -592,10 +597,17 @@ async function scrapeAllWatchlists() {
     const watchlists = await Watchlist.find().populate('userId', 'username');
     console.log(`Found ${watchlists.length} watchlists to process`);
     
+    // Store all results
+    const allResults = [];
+    
     // Process each watchlist
     for (const watchlist of watchlists) {
-        await processWatchlist(watchlist);
+        const watchlistResults = await processWatchlist(watchlist);
+        allResults.push(...watchlistResults);
     }
+    
+    // Return all the results
+    return allResults;
 }
 
 // Process a single watchlist
